@@ -31,8 +31,7 @@ export default function LoginPage() {
       return
     }
 
-    router.push("/attendance")
-    router.refresh()
+    window.location.href = "/attendance"
   }
 
   return (
