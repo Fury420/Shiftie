@@ -7,8 +7,11 @@ import type { NextRequest } from "next/server"
  * cached redirect na /login a request sa nikdy nedostane do Next.js.
  */
 export function middleware(request: NextRequest) {
-  const res = NextResponse.next()
   const pathname = request.nextUrl.pathname
+  // Diagnostika: ak toto v logu nevidíš pri GET /attendance, request neprešiel do Next.js
+  console.log("[MIDDLEWARE]", request.method, pathname)
+
+  const res = NextResponse.next()
 
   // Iba page routes – API a static sú mimo
   if (!pathname.startsWith("/api") && !pathname.startsWith("/_next")) {
