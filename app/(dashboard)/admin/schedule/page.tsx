@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { db } from "@/db"
 import { shifts, user } from "@/db/schema"
 import { eq, and, gte, lte, asc } from "drizzle-orm"

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { db } from "@/db"
 import { attendance } from "@/db/schema"
 import { getSession } from "@/lib/session"
