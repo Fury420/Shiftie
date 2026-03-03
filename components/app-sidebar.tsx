@@ -6,6 +6,7 @@ import { Clock, Calendar, Users, CalendarCog, BarChart3, ArrowLeftRight } from "
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarHeader,
@@ -15,6 +16,7 @@ import {
   SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { UserMenu } from "@/components/user-menu"
 
 const employeeNav = [
   { href: "/attendance", label: "Dochádzka", icon: Clock },
@@ -29,7 +31,7 @@ const adminNav = [
 ]
 
 interface AppSidebarProps {
-  user: { name: string; email: string; role: string }
+  user: { name: string; email: string; role: string; color?: string | null }
   pendingReplacementCount: number
 }
 
@@ -83,6 +85,10 @@ export function AppSidebar({ user, pendingReplacementCount }: AppSidebarProps) {
           </>
         )}
       </SidebarContent>
+
+      <SidebarFooter className="border-t border-sidebar-border p-3">
+        <UserMenu user={user} />
+      </SidebarFooter>
     </Sidebar>
   )
 }

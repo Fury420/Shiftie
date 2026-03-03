@@ -42,7 +42,7 @@ export function UserMenu({ user }: UserMenuProps) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="flex items-center gap-2 rounded-md px-2 py-1 text-sm hover:bg-accent transition-colors">
+          <button className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent transition-colors text-sidebar-foreground">
             <Avatar className="size-7">
               <AvatarFallback
                 className="text-xs text-white font-semibold"
@@ -51,11 +51,11 @@ export function UserMenu({ user }: UserMenuProps) {
                 {initials}
               </AvatarFallback>
             </Avatar>
-            <div className="flex flex-col items-start leading-tight">
-              <span className="font-medium">{user.name}</span>
-              <span className="text-xs text-muted-foreground truncate max-w-[160px]">{user.email}</span>
+            <div className="flex flex-col items-start leading-tight min-w-0">
+              <span className="font-medium truncate max-w-[140px]">{user.name}</span>
+              <span className="text-xs opacity-60 truncate max-w-[140px]">{user.email}</span>
             </div>
-            <ChevronDown className="size-4 text-muted-foreground" />
+            <ChevronDown className="size-4 ml-auto opacity-60 shrink-0" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
