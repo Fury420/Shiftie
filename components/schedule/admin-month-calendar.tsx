@@ -115,7 +115,86 @@ export function AdminMonthCalendar({
           </div>
         </div>
 
-        <div className="rounded-xl border overflow-hidden">
+        {/* ── Mobile: agenda list ─────────────────────────── */}
+        <div className="md:hidden flex flex-col gap-2">
+          {weeks.flat().filter((d) => d.isCurrentMonth).map((day) => {
+            const dateObj = new Date(day.date + "T12:00:00")
+            const dayLabel = dateObj.toLocaleDateString("sk-SK", { weekday: "long", day: "numeric", month: "numeric" })
+            return (
+              <div
+                key={day.date}
+                className={cn(
+                  "rounded-xl border p-3 flex flex-col gap-2",
+                  day.isToday && "border-primary/40 bg-primary/5",
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={cn(
+                        "size-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
+                        day.isToday ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      {dateObj.getDate()}
+                    </div>
+                    <span className="text-sm font-medium capitalize">{dayLabel}</span>
+                  </div>
+                  <button
+                    onClick={() => openCreate(day.date)}
+                    className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                  >
+                    <Plus className="size-4 text-muted-foreground" />
+                  </button>
+                </div>
+
+                {day.shifts.length === 0 ? (
+                  <p className="text-xs text-muted-foreground pl-10">Žiadne smeny</p>
+                ) : (
+                  <div className="flex flex-col gap-1.5 pl-10">
+                    {day.shifts.map((shift) => (
+                      <DropdownMenu key={shift.id}>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            className={cn(
+                              "w-full text-left rounded-lg px-3 py-2 hover:opacity-80 transition-opacity",
+                              shift.status === "draft" && "opacity-60",
+                            )}
+                            style={{
+                              backgroundColor: shift.color + "28",
+                              borderLeft: `3px ${shift.status === "draft" ? "dashed" : "solid"} ${shift.color}`,
+                            }}
+                          >
+                            <div className="text-sm font-semibold" style={{ color: shift.color }}>
+                              {shift.userName.split(" ")[0]}
+                            </div>
+                            <div className="text-xs opacity-75" style={{ color: shift.color }}>
+                              {shift.startTime}–{shift.endTime}
+                              {shift.status === "draft" && " · koncept"}
+                            </div>
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem onClick={() => openEdit(shift)}>Upraviť</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleToggle(shift.id, shift.status)} disabled={isPending}>
+                            {shift.status === "draft" ? "Publikovať" : "Zrušiť publikovanie"}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id)} disabled={isPending}>
+                            Odstrániť
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* ── Desktop: grid calendar ───────────────────────── */}
+        <div className="hidden md:block rounded-xl border overflow-hidden">
           <div className="grid grid-cols-7 bg-muted/50 border-b">
             {DAY_LABELS.map((label) => (
               <div key={label} className="py-1.5 text-center text-xs font-medium text-muted-foreground">
