@@ -19,6 +19,7 @@ export const user = pgTable("user", {
   role: roleEnum("role").notNull().default("employee"),
   color: text("color"), // hex color e.g. "#3b82f6"
   archivedAt: timestamp("archived_at"),
+  mustChangePassword: boolean("must_change_password").notNull().default(false),
   defaultDays: text("default_days"), // comma-separated day numbers: 0=Sun,1=Mon,...,6=Sat
   defaultStartTime: time("default_start_time"),
   defaultEndTime: time("default_end_time"),

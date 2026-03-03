@@ -41,7 +41,7 @@ export async function requestReplacement(shiftId: string, replacementUserId: str
     note: note ?? null,
   })
 
-  revalidatePath("/zastup")
+  revalidatePath("/replacements")
 }
 
 export async function respondToReplacement(id: string, response: "accepted" | "rejected") {
@@ -70,7 +70,7 @@ export async function respondToReplacement(id: string, response: "accepted" | "r
     .set({ status: response, updatedAt: new Date() })
     .where(eq(shiftReplacements.id, id))
 
-  revalidatePath("/zastup")
+  revalidatePath("/replacements")
   revalidatePath("/schedule")
 }
 
@@ -98,8 +98,8 @@ export async function adminResolveReplacement(id: string, response: "accepted" |
     .set({ status: response, updatedAt: new Date() })
     .where(eq(shiftReplacements.id, id))
 
-  revalidatePath("/admin/zastup")
-  revalidatePath("/zastup")
+  revalidatePath("/admin/replacements")
+  revalidatePath("/replacements")
   revalidatePath("/schedule")
 }
 
@@ -108,6 +108,6 @@ export async function adminDeleteReplacement(id: string) {
 
   await db.delete(shiftReplacements).where(eq(shiftReplacements.id, id))
 
-  revalidatePath("/admin/zastup")
-  revalidatePath("/zastup")
+  revalidatePath("/admin/replacements")
+  revalidatePath("/replacements")
 }

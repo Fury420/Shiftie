@@ -18,7 +18,7 @@ import {
 const employeeNav = [
   { href: "/attendance", label: "Dochádzka", icon: Clock },
   { href: "/schedule", label: "Plán smien", icon: Calendar },
-  { href: "/zastup", label: "Zastup", icon: ArrowLeftRight },
+  { href: "/replacements", label: "Zastup", icon: ArrowLeftRight },
 ]
 
 const adminNav = [
@@ -50,7 +50,7 @@ export function AppSidebar({ user, pendingReplacementCount }: AppSidebarProps) {
                   <Link href={href}>
                     <Icon />
                     <span>{label}</span>
-                    {href === "/zastup" && pendingReplacementCount > 0 && (
+                    {href === "/replacements" && pendingReplacementCount > 0 && (
                       <span className="ml-auto size-2 rounded-full bg-destructive" />
                     )}
                   </Link>

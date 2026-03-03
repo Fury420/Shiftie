@@ -16,7 +16,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/login")
   }
 
-  const sessionUser = session.user as { role?: string; color?: string | null }
+  const sessionUser = session.user as { role?: string; color?: string | null; mustChangePassword?: boolean }
+
+  if (sessionUser.mustChangePassword) {
+    redirect("/set-password")
+  }
   const user = {
     name: session.user.name,
     email: session.user.email,

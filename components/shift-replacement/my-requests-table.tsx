@@ -55,7 +55,7 @@ export function MyRequestsTable({
         <span className="text-sm font-medium capitalize">{monthLabel}</span>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" asChild>
-            <Link href={`/zastup?month=${prevMonth}`}>
+            <Link href={`/replacements?month=${prevMonth}`}>
               <ChevronLeft className="size-4" />
             </Link>
           </Button>
@@ -65,7 +65,7 @@ export function MyRequestsTable({
             </Button>
           ) : (
             <Button variant="ghost" size="icon" asChild>
-              <Link href={`/zastup?month=${nextMonth}`}>
+              <Link href={`/replacements?month=${nextMonth}`}>
                 <ChevronRight className="size-4" />
               </Link>
             </Button>

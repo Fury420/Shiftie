@@ -27,7 +27,7 @@ export async function createEmployee(data: {
 
   await db
     .update(user)
-    .set({ role: data.role, emailVerified: true, defaultDays: data.defaultDays || null, color: data.color || null })
+    .set({ role: data.role, emailVerified: true, defaultDays: data.defaultDays || null, color: data.color || null, mustChangePassword: true })
     .where(eq(user.email, data.email))
 
   revalidatePath("/admin/employees")
