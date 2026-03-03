@@ -17,6 +17,9 @@ export const auth = betterAuth({
       verification: schema.verification,
     },
   }),
+  advanced: {
+    useSecureCookies: true,
+  },
   emailAndPassword: {
     enabled: true,
   },
