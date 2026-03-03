@@ -48,7 +48,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <UserMenu user={user} />
           </div>
         </header>
-        <main className="mx-auto w-full max-w-7xl flex-1 p-3 md:p-6">{children}</main>
+        <main className="w-full flex-1 p-3 md:p-6">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   )
