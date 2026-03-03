@@ -36,7 +36,7 @@ export function AppSidebar({ user, pendingReplacementCount }: AppSidebarProps) {
   const pathname = usePathname()
 
   return (
-    <Sidebar collapsible="none">
+    <Sidebar collapsible="none" className="sticky top-0 h-svh">
       <SidebarHeader className="px-4 py-4">
         <span className="text-lg font-semibold tracking-tight">OnShift</span>
       </SidebarHeader>
