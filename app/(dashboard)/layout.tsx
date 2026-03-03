@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic"
 
 import { redirect } from "next/navigation"
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { UserMenu } from "@/components/user-menu"
 import { getSession } from "@/lib/session"
@@ -39,10 +39,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
     )
 
   return (
-    <SidebarProvider open={true}>
+    <SidebarProvider>
       <AppSidebar user={user} pendingReplacementCount={pendingReplacements.length} />
       <SidebarInset>
-        <header className="flex h-12 items-center border-b px-4">
+        <header className="flex h-12 items-center border-b px-4 gap-2">
+          <SidebarTrigger className="md:hidden" />
           <div className="ml-auto">
             <UserMenu user={user} />
           </div>

@@ -13,6 +13,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
+  useSidebar,
 } from "@/components/ui/sidebar"
 
 const employeeNav = [
@@ -34,9 +35,10 @@ interface AppSidebarProps {
 
 export function AppSidebar({ user, pendingReplacementCount }: AppSidebarProps) {
   const pathname = usePathname()
+  const { setOpenMobile } = useSidebar()
 
   return (
-    <Sidebar collapsible="none" className="sticky top-0 h-svh w-52 min-w-52 overflow-hidden">
+    <Sidebar collapsible="offcanvas">
       <SidebarHeader className="px-4 py-4">
         <span className="text-lg font-semibold tracking-tight">OnShift</span>
       </SidebarHeader>
@@ -47,7 +49,7 @@ export function AppSidebar({ user, pendingReplacementCount }: AppSidebarProps) {
             {employeeNav.map(({ href, label, icon: Icon }) => (
               <SidebarMenuItem key={href}>
                 <SidebarMenuButton asChild isActive={pathname.startsWith(href)}>
-                  <Link href={href}>
+                  <Link href={href} onClick={() => setOpenMobile(false)}>
                     <Icon />
                     <span>{label}</span>
                     {href === "/replacements" && pendingReplacementCount > 0 && (
@@ -69,7 +71,7 @@ export function AppSidebar({ user, pendingReplacementCount }: AppSidebarProps) {
                 {adminNav.map(({ href, label, icon: Icon }) => (
                   <SidebarMenuItem key={href}>
                     <SidebarMenuButton asChild isActive={pathname.startsWith(href)}>
-                      <Link href={href}>
+                      <Link href={href} onClick={() => setOpenMobile(false)}>
                         <Icon />
                         <span>{label}</span>
                       </Link>
