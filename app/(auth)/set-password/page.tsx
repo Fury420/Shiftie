@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { changeFirstLoginPassword } from "@/app/actions/change-password"
+import { signOut } from "@/lib/auth-client"
 
 export default function NastavHesloPage() {
   const [currentPassword, setCurrentPassword] = useState("")
@@ -83,6 +84,14 @@ export default function NastavHesloPage() {
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Ukladanie…" : "Nastaviť heslo"}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full"
+            onClick={() => signOut({ fetchOptions: { onSuccess: () => { window.location.href = "/login" } } })}
+          >
+            Odhlásiť sa
           </Button>
         </form>
       </CardContent>
