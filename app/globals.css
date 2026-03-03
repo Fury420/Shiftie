@@ -127,6 +127,7 @@
   [data-slot="sidebar"] {
     font-size: 1rem;
     border-radius: 0.75rem;
+    overflow-x: hidden;
   }
   body {
     @apply bg-background text-foreground;
