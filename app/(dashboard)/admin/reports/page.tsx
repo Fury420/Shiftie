@@ -7,16 +7,8 @@ import { requireAdmin } from "@/lib/auth-guard"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { HoursPieChart } from "@/components/reports/hours-pie-chart"
+import { AdminAttendanceTable } from "@/components/reports/admin-attendance-table"
 
 const TZ = "Europe/Bratislava"
 
@@ -24,11 +16,6 @@ function roundTo15(ms: number): number {
   return Math.round(ms / 60000 / 15) * 15
 }
 
-function formatDuration(minutes: number): string {
-  const h = Math.floor(minutes / 60)
-  const m = minutes % 60
-  return m === 0 ? `${h}h` : `${h}h ${String(m).padStart(2, "0")}m`
-}
 
 function formatTime(date: Date): string {
   return date.toLocaleTimeString("sk-SK", { timeZone: TZ, hour: "2-digit", minute: "2-digit" })
@@ -89,7 +76,7 @@ export default async function AdminReportsPage({
     )
     .orderBy(asc(user.name), asc(attendance.clockIn))
 
-  type FlatRow = { id: string; name: string; color: string | null; date: string; clockIn: string; clockOut: string; minutes: number }
+  type FlatRow = { id: string; name: string; color: string | null; date: string; clockIn: string; clockOut: string; clockInISO: string; clockOutISO: string; minutes: number }
   const allRows: FlatRow[] = []
   const pieMap = new Map<string, { name: string; color: string | null; totalMinutes: number }>()
 
@@ -104,6 +91,8 @@ export default async function AdminReportsPage({
       date: formatDate(r.clockIn),
       clockIn: formatTime(r.clockIn),
       clockOut: formatTime(r.clockOut),
+      clockInISO: r.clockIn.toISOString(),
+      clockOutISO: r.clockOut.toISOString(),
       minutes,
     })
 
@@ -149,44 +138,7 @@ export default async function AdminReportsPage({
       ) : (
         <div className="grid grid-cols-2 items-start gap-6">
           {/* ── Unified table ─────────────────────────────── */}
-          <div className="min-w-0 rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Dátum</TableHead>
-                  <TableHead>Od</TableHead>
-                  <TableHead>Do</TableHead>
-                  <TableHead className="text-right">Spolu</TableHead>
-                  <TableHead className="text-right">Zamestnanec</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {allRows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    style={{ backgroundColor: row.color ? `${row.color}18` : undefined }}
-                  >
-                    <TableCell>{row.date}</TableCell>
-                    <TableCell>{row.clockIn}</TableCell>
-                    <TableCell>{row.clockOut}</TableCell>
-                    <TableCell className="text-right font-mono text-sm">
-                      {formatDuration(row.minutes)}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">{row.name}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-              <TableFooter>
-                <TableRow>
-                  <TableCell colSpan={3} className="font-semibold">Celkom</TableCell>
-                  <TableCell className="text-right font-mono font-semibold">
-                    {formatDuration(grandTotal)}
-                  </TableCell>
-                  <TableCell />
-                </TableRow>
-              </TableFooter>
-            </Table>
-          </div>
+          <AdminAttendanceTable rows={allRows} grandTotal={grandTotal} />
 
           {/* ── Pie chart ─────────────────────────────────── */}
           <div className="rounded-lg border bg-card p-4">
