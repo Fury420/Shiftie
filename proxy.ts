@@ -17,7 +17,7 @@ export function proxy(request: NextRequest) {
   }
 
   if (isAuthRoute && session) {
-    return NextResponse.redirect(new URL("/attendance", request.url))
+    return NextResponse.redirect(new URL("/", request.url))
   }
 
   return NextResponse.next()
