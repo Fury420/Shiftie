@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic"
 
 import { db } from "@/db"
-import { attendance } from "@/db/schema"
+import { attendance, shifts } from "@/db/schema"
 import { getSession } from "@/lib/session"
 import { eq, and, isNull, gte, lt } from "drizzle-orm"
 import { ClockCard } from "@/components/attendance/clock-card"
@@ -60,7 +60,10 @@ export default async function AttendancePage({
 
   const { start, end } = monthBounds(year, monthNum)
 
-  const [openRecord, records] = await Promise.all([
+  const todayStr = now.toLocaleDateString("en-CA", { timeZone: TZ }) // YYYY-MM-DD
+  console.log("[attendance] todayStr:", todayStr, "userId:", session.user.id)
+
+  const [openRecord, records, todayShift] = await Promise.all([
     db
       .select()
       .from(attendance)
@@ -79,6 +82,13 @@ export default async function AttendancePage({
         ),
       )
       .orderBy(attendance.clockIn),
+
+    db
+      .select({ startTime: shifts.startTime, endTime: shifts.endTime })
+      .from(shifts)
+      .where(and(eq(shifts.userId, session.user.id), eq(shifts.date, todayStr), eq(shifts.status, "published")))
+      .limit(1)
+      .then((r) => { console.log("[attendance] todayShift query result:", r); return r[0] ?? null }),
   ])
 
   const formattedRecords = records.map((r) => {
@@ -123,6 +133,7 @@ export default async function AttendancePage({
       <ClockCard
         isActive={!!openRecord}
         clockInTime={openRecord?.clockIn.toISOString() ?? null}
+        scheduledShift={todayShift}
       />
 
       <AttendanceTable

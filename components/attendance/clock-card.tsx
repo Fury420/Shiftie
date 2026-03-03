@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useTransition } from "react"
-import { LogIn, LogOut, Clock } from "lucide-react"
+import { LogIn, LogOut, Clock, CalendarClock } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { clockIn, clockOut } from "@/app/actions/attendance"
@@ -9,6 +9,7 @@ import { clockIn, clockOut } from "@/app/actions/attendance"
 interface ClockCardProps {
   isActive: boolean
   clockInTime: string | null // ISO string
+  scheduledShift: { startTime: string; endTime: string } | null
 }
 
 function formatElapsed(ms: number) {
@@ -19,7 +20,7 @@ function formatElapsed(ms: number) {
   return [h, m, sec].map((v) => String(v).padStart(2, "0")).join(":")
 }
 
-export function ClockCard({ isActive, clockInTime }: ClockCardProps) {
+export function ClockCard({ isActive, clockInTime, scheduledShift }: ClockCardProps) {
   const [elapsed, setElapsed] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -65,6 +66,15 @@ export function ClockCard({ isActive, clockInTime }: ClockCardProps) {
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-0.5">
             <p className="text-sm text-muted-foreground capitalize">{today}</p>
+            {scheduledShift && (
+              <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                <CalendarClock className="size-3.5 shrink-0" />
+                Smena:{" "}
+                <span className="font-medium text-foreground">
+                  {scheduledShift.startTime.slice(0, 5)} – {scheduledShift.endTime.slice(0, 5)}
+                </span>
+              </p>
+            )}
             {isActive && clockInFormatted && (
               <p className="text-sm text-muted-foreground">
                 Príchod: <span className="font-medium text-foreground">{clockInFormatted}</span>
