@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { Send, Check, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -131,6 +132,7 @@ interface TemplatePanelProps {
 }
 
 export function TemplatePanel({ employees, defaultFrom, defaultTo }: TemplatePanelProps) {
+  const router = useRouter()
   const [rangePending, startRangeTransition] = useTransition()
   const [rangeApplied, setRangeApplied] = useState(false)
 
@@ -143,6 +145,7 @@ export function TemplatePanel({ employees, defaultFrom, defaultTo }: TemplatePan
     if (!rangeFrom || !rangeTo || rangeFrom > rangeTo) return
     startRangeTransition(async () => {
       await generateDefaultRange(rangeFrom, rangeTo)
+      router.refresh()
       setRangeApplied(true)
       setTimeout(() => setRangeApplied(false), 2500)
     })
