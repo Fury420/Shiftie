@@ -4,6 +4,7 @@ import { db } from "@/db"
 import * as schema from "@/db/schema"
 
 const appUrl = process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL
+console.log("[AUTH INIT] BETTER_AUTH_URL:", process.env.BETTER_AUTH_URL, "NEXT_PUBLIC_APP_URL:", process.env.NEXT_PUBLIC_APP_URL, "appUrl:", appUrl)
 
 export const auth = betterAuth({
   baseURL: appUrl,
