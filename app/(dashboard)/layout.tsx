@@ -39,7 +39,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     )
 
   return (
-    <SidebarProvider className="bg-muted dark:bg-background">
+    <SidebarProvider className="bg-black">
       <AppSidebar user={user} pendingReplacementCount={pendingReplacements.length} />
       <SidebarInset className="my-2 mr-2 rounded-xl overflow-hidden shadow-sm dark:bg-card">
         <header className="flex h-12 items-center border-b px-4 gap-2">
