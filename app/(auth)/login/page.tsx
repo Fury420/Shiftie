@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { signIn } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 
 export default function LoginPage() {
+  const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -18,27 +20,18 @@ export default function LoginPage() {
     setError("")
     setLoading(true)
 
-    const { error: signInError } = await signIn.email(
-      {
-        email,
-        password,
-        callbackURL: "/attendance",
-      },
-      {
-        onSuccess: () => {
-          window.location.assign("/attendance")
-        },
-      },
-    )
+    const { error } = await signIn.email({
+      email,
+      password,
+    })
 
-    if (signInError) {
+    if (error) {
       setError("Nesprávny email alebo heslo.")
       setLoading(false)
       return
     }
 
-    // Ak knižnica nerobí redirect, presmerujeme manuálne
-    window.location.assign("/attendance")
+    window.location.href = "/attendance"
   }
 
   return (
