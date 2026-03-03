@@ -35,7 +35,7 @@ export default function LoginPage() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">OnShift</CardTitle>
+        <CardTitle className="text-2xl">Shiftie</CardTitle>
         <CardDescription>Prihláste sa do svojho účtu</CardDescription>
       </CardHeader>
       <CardContent>

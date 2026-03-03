@@ -10,7 +10,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "OnShift",
+  title: "Shiftie",
   description: "Evidencia dochádzky zamestnancov",
 }
 

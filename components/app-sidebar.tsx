@@ -40,7 +40,7 @@ export function AppSidebar({ user, pendingReplacementCount }: AppSidebarProps) {
   return (
     <Sidebar collapsible="offcanvas">
       <SidebarHeader className="px-4 py-4">
-        <span className="text-lg font-semibold tracking-tight">OnShift</span>
+        <span className="text-lg font-semibold tracking-tight">Shiftie</span>
       </SidebarHeader>
 
       <SidebarContent>

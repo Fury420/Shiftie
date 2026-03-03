@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**OnShift** — employee attendance tracking app for a single bar. Replaces an Excel spreadsheet. Features: clock in/out, monthly hours overview per employee, shift scheduling, and vacation/leave management.
+**Shiftie** — employee attendance tracking app for a single bar. Replaces an Excel spreadsheet. Features: clock in/out, monthly hours overview per employee, shift scheduling, and vacation/leave management.
 
 ## Stack
 
