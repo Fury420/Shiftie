@@ -17,14 +17,14 @@ export async function requestReplacement(shiftId: string, replacementUserId: str
     .where(eq(shifts.id, shiftId))
     .limit(1)
 
-  if (!shift) throw new Error("Smena neexistuje")
+  if (!shift) throw new Error("Zmena neexistuje")
   const role = (session.user as { role?: string }).role
   if (role !== "admin" && shift.userId !== session.user.id) throw new Error("Nemáš oprávnenie")
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const shiftDate = new Date(shift.date + "T00:00:00")
-  if (shiftDate < today) throw new Error("Nemôžeš požiadať o zastup na minulú smenu")
+  if (shiftDate < today) throw new Error("Nemôžeš požiadať o zastup na minulú zmenu")
 
   const [existing] = await db
     .select({ id: shiftReplacements.id })
@@ -32,7 +32,7 @@ export async function requestReplacement(shiftId: string, replacementUserId: str
     .where(and(eq(shiftReplacements.shiftId, shiftId), eq(shiftReplacements.status, "pending")))
     .limit(1)
 
-  if (existing) throw new Error("Pre túto smenu už existuje čakajúca žiadosť")
+  if (existing) throw new Error("Pre túto zmenu už existuje čakajúca žiadosť")
 
   await db.insert(shiftReplacements).values({
     shiftId,

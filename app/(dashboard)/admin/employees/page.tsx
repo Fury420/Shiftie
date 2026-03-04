@@ -17,6 +17,7 @@ export default async function AdminEmployeesPage() {
       role: user.role,
       defaultDays: user.defaultDays,
       color: user.color,
+      hourlyRate: user.hourlyRate,
       archivedAt: user.archivedAt,
       createdAt: user.createdAt,
     })
@@ -30,6 +31,7 @@ export default async function AdminEmployeesPage() {
     role: e.role,
     defaultDays: e.defaultDays ?? "",
     color: e.color ?? "",
+    hourlyRate: e.hourlyRate != null ? parseFloat(e.hourlyRate) : null,
     isArchived: e.archivedAt !== null,
     createdAt: new Date(e.createdAt).toLocaleDateString("sk-SK", {
       day: "numeric",

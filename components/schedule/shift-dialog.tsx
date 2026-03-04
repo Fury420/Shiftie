@@ -107,7 +107,7 @@ export function ShiftDialog({ open, onOpenChange, employees, shift, defaultDate 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Upraviť smenu" : "Nová smena"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Upraviť zmenu" : "Nová zmena"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

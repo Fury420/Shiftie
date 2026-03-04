@@ -18,7 +18,23 @@
       "Bash(npx drizzle-kit:*)",
       "Bash(git add Dockerfile .dockerignore next.config.ts)",
       "Bash(git commit -m \"Add Dockerfile for Coolify deployment\")",
-      "Bash(git push)"
+      "Bash(git push)",
+      "Bash(cd:*)",
+      "Bash(echo no env files found:*)",
+      "Bash(./node_modules/.bin/drizzle-kit push:*)",
+      "Bash(./node_modules/.bin/drizzle-kit generate:*)",
+      "mcp__ide__getDiagnostics",
+      "WebFetch(domain:mui.com)",
+      "Bash(ls:*)",
+      "WebFetch(domain:minimals.cc)",
+      "WebSearch",
+      "WebFetch(domain:material-kit-pro-react.devias.io)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(find \"/Users/jan.dlhy/Projects/Fury420:Onshift/OnShift/app/\\(dashboard\\)/attendance\" -type f)",
+      "Bash(cat \"/Users/jan.dlhy/Projects/Fury420:Onshift/OnShift/app/\\(dashboard\\)/attendance/page.tsx\")",
+      "Bash(./node_modules/.bin/next build:*)"
     ]
   }
 }

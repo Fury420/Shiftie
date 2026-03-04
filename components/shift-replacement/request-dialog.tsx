@@ -65,7 +65,7 @@ export function RequestDialog({ open, onOpenChange, shift, colleagues }: Request
         </DialogHeader>
 
         <div className="text-sm text-muted-foreground">
-          Smena: <span className="font-medium text-foreground">{shift.date}</span>{" "}
+          Zmena: <span className="font-medium text-foreground">{shift.date}</span>{" "}
           {shift.startTime}–{shift.endTime}
         </div>
 

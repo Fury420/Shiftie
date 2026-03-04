@@ -38,6 +38,8 @@ interface AttendanceTableProps {
   nextMonth: string
   isCurrentMonth: boolean
   userName: string
+  monthlyWage: number | null
+  hourlyRate: number | null
 }
 
 function formatLive(ms: number) {
@@ -58,6 +60,8 @@ export function AttendanceTable({
   nextMonth,
   isCurrentMonth,
   userName,
+  monthlyWage,
+  hourlyRate,
 }: AttendanceTableProps) {
   const [liveTotal, setLiveTotal] = useState<string | null>(null)
 
@@ -170,6 +174,20 @@ export function AttendanceTable({
                 </TableCell>
                 <TableCell />
               </TableRow>
+              {monthlyWage != null && (
+                <TableRow>
+                  <TableCell colSpan={2} className="font-medium text-muted-foreground">
+                    Mzda za mesiac
+                    {hourlyRate != null && (
+                      <span className="ml-1.5 text-xs font-normal">({hourlyRate.toFixed(2).replace(".", ",")} €/h)</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right font-semibold tabular-nums">
+                    {monthlyWage.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                  </TableCell>
+                  <TableCell />
+                </TableRow>
+              )}
             </TableFooter>
           )}
         </Table>

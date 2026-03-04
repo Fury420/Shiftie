@@ -104,7 +104,7 @@ export default async function AdminSchedulePage({
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl">
-      <h1 className="text-2xl font-semibold">Správa smien</h1>
+      <h1 className="text-2xl font-semibold">Správa zmien</h1>
 
       <TemplatePanel
         employees={templates}

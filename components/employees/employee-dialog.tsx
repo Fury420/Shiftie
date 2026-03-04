@@ -27,6 +27,7 @@ export interface EmployeeForEdit {
   role: "admin" | "employee"
   defaultDays: string
   color: string
+  hourlyRate: number | null
 }
 
 interface EmployeeDialogProps {
@@ -65,6 +66,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
   const [role, setRole] = useState<"admin" | "employee">("employee")
   const [selectedDays, setSelectedDays] = useState<number[]>([])
   const [color, setColor] = useState(PRESET_COLORS[0])
+  const [hourlyRate, setHourlyRate] = useState("")
   const [error, setError] = useState("")
   const [isPending, startTransition] = useTransition()
 
@@ -80,6 +82,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
           : [],
       )
       setColor(employee?.color || PRESET_COLORS[0])
+      setHourlyRate(employee?.hourlyRate != null ? String(employee.hourlyRate) : "")
       setError("")
     }
   }, [open, employee])
@@ -95,13 +98,14 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
     setError("")
 
     const defaultDays = selectedDays.join(",")
+    const parsedRate = hourlyRate !== "" ? parseFloat(hourlyRate) : null
 
     startTransition(async () => {
       try {
         if (isEdit) {
-          await updateEmployee(employee.id, { name, role, defaultDays, color })
+          await updateEmployee(employee.id, { name, role, defaultDays, color, hourlyRate: parsedRate })
         } else {
-          await createEmployee({ name, email, password, role, defaultDays, color })
+          await createEmployee({ name, email, password, role, defaultDays, color, hourlyRate: parsedRate })
         }
         onOpenChange(false)
       } catch (err) {
@@ -198,6 +202,19 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                 title="Vlastná farba"
               />
             </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="hourlyRate">Hodinová sadzba (€/h)</Label>
+            <Input
+              id="hourlyRate"
+              type="number"
+              min={0}
+              step={0.01}
+              value={hourlyRate}
+              onChange={(e) => setHourlyRate(e.target.value)}
+              placeholder="napr. 7.50"
+            />
           </div>
 
           <div className="flex flex-col gap-1.5">

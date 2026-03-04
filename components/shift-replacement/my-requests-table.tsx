@@ -77,7 +77,7 @@ export function MyRequestsTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Smena</TableHead>
+              <TableHead>Zmena</TableHead>
               <TableHead>Navrhnutý náhradník</TableHead>
               <TableHead>Poznámka</TableHead>
               <TableHead>Stav</TableHead>

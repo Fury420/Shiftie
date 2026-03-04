@@ -37,7 +37,7 @@ export function IncomingRequestsTable({ requests }: { requests: IncomingRequest[
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Smena</TableHead>
+            <TableHead>Zmena</TableHead>
             <TableHead>Žiadateľ</TableHead>
             <TableHead>Poznámka</TableHead>
             <TableHead className="text-right">Akcia</TableHead>

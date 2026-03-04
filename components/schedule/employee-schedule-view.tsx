@@ -30,7 +30,7 @@ export function EmployeeScheduleView({
 }: EmployeeScheduleViewProps) {
   return (
     <div className="flex flex-col gap-6 max-w-lg">
-      <h1 className="text-2xl font-semibold">Plán smien</h1>
+      <h1 className="text-2xl font-semibold">Plán zmien</h1>
 
       <div className="flex items-center gap-2">
         <Button variant="outline" size="icon" asChild>

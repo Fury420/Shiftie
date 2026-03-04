@@ -110,7 +110,7 @@ export function AdminMonthCalendar({
             )}
             <Button size="sm" onClick={() => openCreate()}>
               <Plus className="size-4" />
-              Nová smena
+              Nová zmena
             </Button>
           </div>
         </div>
@@ -149,7 +149,7 @@ export function AdminMonthCalendar({
                 </div>
 
                 {day.shifts.length === 0 ? (
-                  <p className="text-xs text-muted-foreground pl-10">Žiadne smeny</p>
+                  <p className="text-xs text-muted-foreground pl-10">Žiadne zmeny</p>
                 ) : (
                   <div className="flex flex-col gap-1.5 pl-10">
                     {day.shifts.map((shift) => (

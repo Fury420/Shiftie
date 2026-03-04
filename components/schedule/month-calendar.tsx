@@ -48,7 +48,7 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Plán smien</h1>
+        <h1 className="text-2xl font-semibold">Plán zmien</h1>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" asChild>
             <Link href={`/schedule?month=${prevMonth}`}>
@@ -94,7 +94,7 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
               </div>
 
               {day.shifts.length === 0 ? (
-                <p className="text-xs text-muted-foreground pl-10">Žiadne smeny</p>
+                <p className="text-xs text-muted-foreground pl-10">Žiadne zmeny</p>
               ) : (
                 <div className="flex flex-col gap-1.5 pl-10">
                   {day.shifts.map((shift) => {

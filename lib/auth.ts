@@ -43,6 +43,11 @@ export const auth = betterAuth({
         input: false,
         returned: true,
       },
+      hourlyRate: {
+        type: "number",
+        required: false,
+        input: false,
+      },
     },
   },
 })

@@ -3,7 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Clock, Calendar, Users, CalendarCog, BarChart3, ArrowLeftRight } from "lucide-react"
+import { Clock, Calendar, Users, CalendarCog, BarChart3, ArrowLeftRight, Banknote } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -19,14 +19,15 @@ import {
 
 const employeeNav = [
   { href: "/attendance", label: "Dochádzka", icon: Clock },
-  { href: "/schedule", label: "Plán smien", icon: Calendar },
+  { href: "/schedule", label: "Plán zmien", icon: Calendar },
   { href: "/replacements", label: "Zastup", icon: ArrowLeftRight },
 ]
 
 const adminNav = [
   { href: "/admin/employees", label: "Zamestnanci", icon: Users },
-  { href: "/admin/schedule", label: "Správa smien", icon: CalendarCog },
+  { href: "/admin/schedule", label: "Správa zmien", icon: CalendarCog },
   { href: "/admin/reports", label: "Reporty", icon: BarChart3 },
+  { href: "/admin/wages", label: "Mzdy", icon: Banknote },
 ]
 
 interface AppSidebarProps {

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, pgEnum, date, time, uuid, boolean } from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, pgEnum, date, time, uuid, boolean, decimal } from "drizzle-orm/pg-core"
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
@@ -20,6 +20,7 @@ export const user = pgTable("user", {
   color: text("color"), // hex color e.g. "#3b82f6"
   archivedAt: timestamp("archived_at"),
   mustChangePassword: boolean("must_change_password").notNull().default(false),
+  hourlyRate: decimal("hourly_rate", { precision: 8, scale: 2 }),
   defaultDays: text("default_days"), // comma-separated day numbers: 0=Sun,1=Mon,...,6=Sat
   defaultStartTime: time("default_start_time"),
   defaultEndTime: time("default_end_time"),

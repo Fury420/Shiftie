@@ -160,7 +160,7 @@ export default async function ZastupPage({
 
   return (
     <div className="flex flex-col gap-8 max-w-4xl">
-      <h1 className="text-2xl font-semibold">Zastup smien</h1>
+      <h1 className="text-2xl font-semibold">Zastup zmien</h1>
 
       <section className="flex flex-col gap-3">
         {isAdmin ? (
@@ -175,7 +175,7 @@ export default async function ZastupPage({
           <>
             <h2 className="text-lg font-medium">Žiadosti o mňa</h2>
             <p className="text-sm text-muted-foreground -mt-1">
-              Kolegovia ťa navrhli ako náhradníka na tieto smeny.
+              Kolegovia ťa navrhli ako náhradníka na tieto zmeny.
             </p>
             <IncomingRequestsTable requests={incomingFormatted} />
           </>

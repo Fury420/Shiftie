@@ -69,7 +69,7 @@ export function ClockCard({ isActive, clockInTime, scheduledShift }: ClockCardPr
             {scheduledShift && (
               <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                 <CalendarClock className="size-3.5 shrink-0" />
-                Smena:{" "}
+                Zmena:{" "}
                 <span className="font-medium text-foreground">
                   {scheduledShift.startTime.slice(0, 5)} – {scheduledShift.endTime.slice(0, 5)}
                 </span>

@@ -40,6 +40,7 @@ export interface Employee {
   role: "admin" | "employee"
   defaultDays: string
   color: string
+  hourlyRate: number | null
   isArchived: boolean
   createdAt: string
 }
@@ -68,7 +69,7 @@ export function EmployeesTable({ employees, currentUserId }: EmployeesTableProps
   }
 
   function openEdit(emp: Employee) {
-    setEditing({ id: emp.id, name: emp.name, role: emp.role, defaultDays: emp.defaultDays, color: emp.color })
+    setEditing({ id: emp.id, name: emp.name, role: emp.role, defaultDays: emp.defaultDays, color: emp.color, hourlyRate: emp.hourlyRate })
     setDialogOpen(true)
   }
 
@@ -129,6 +130,7 @@ export function EmployeesTable({ employees, currentUserId }: EmployeesTableProps
               <TableHead>Meno</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Rola</TableHead>
+              <TableHead>Sadzba</TableHead>
               <TableHead>Registrovaný</TableHead>
               <TableHead className="w-12" />
             </TableRow>
@@ -136,7 +138,7 @@ export function EmployeesTable({ employees, currentUserId }: EmployeesTableProps
           <TableBody>
             {visible.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
                   {showArchived ? "Žiadni archivovaní zamestnanci" : "Žiadni zamestnanci"}
                 </TableCell>
               </TableRow>
@@ -166,6 +168,9 @@ export function EmployeesTable({ employees, currentUserId }: EmployeesTableProps
                     ) : (
                       <Badge variant="secondary">Zamestnanec</Badge>
                     )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {emp.hourlyRate != null ? `${Number(emp.hourlyRate).toFixed(2).replace(".", ",")} €/h` : "—"}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{emp.createdAt}</TableCell>
                   <TableCell>
@@ -237,13 +242,13 @@ export function EmployeesTable({ employees, currentUserId }: EmployeesTableProps
               {confirmTarget.type === "archive" ? (
                 <>
                   <strong>{confirmTarget.emp?.name}</strong> bude archivovaný — nebude sa zobrazovať
-                  pri plánovaní smien, ale jeho záznamy a smeny zostanú zachované.
+                  pri plánovaní zmien, ale jeho záznamy a zmeny zostanú zachované.
                   Môžeš ho kedykoľvek obnoviť.
                 </>
               ) : (
                 <>
                   Naozaj chceš natrvalo vymazať <strong>{confirmTarget.emp?.name}</strong>?
-                  Vymažú sa všetky jeho záznamy dochádzky a smeny. Táto akcia je <strong>nevratná</strong>.
+                  Vymažú sa všetky jeho záznamy dochádzky a zmeny. Táto akcia je <strong>nevratná</strong>.
                 </>
               )}
             </AlertDialogDescription>

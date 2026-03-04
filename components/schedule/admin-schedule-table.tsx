@@ -112,7 +112,7 @@ export function AdminScheduleTable({
             )}
             <Button onClick={openCreate}>
               <Plus className="size-4" />
-              Nová smena
+              Nová zmena
             </Button>
           </div>
         </div>
@@ -134,7 +134,7 @@ export function AdminScheduleTable({
               {shifts.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
-                    Žiadne smeny tento týždeň
+                    Žiadne zmeny tento týždeň
                   </TableCell>
                 </TableRow>
               ) : (

@@ -14,6 +14,7 @@ export async function createEmployee(data: {
   role: "admin" | "employee"
   defaultDays: string
   color: string
+  hourlyRate?: number | null
 }) {
   await requireAdmin()
 
@@ -27,7 +28,14 @@ export async function createEmployee(data: {
 
   await db
     .update(user)
-    .set({ role: data.role, emailVerified: true, defaultDays: data.defaultDays || null, color: data.color || null, mustChangePassword: true })
+    .set({
+      role: data.role,
+      emailVerified: true,
+      defaultDays: data.defaultDays || null,
+      color: data.color || null,
+      mustChangePassword: true,
+      hourlyRate: data.hourlyRate != null ? String(data.hourlyRate) : null,
+    })
     .where(eq(user.email, data.email))
 
   revalidatePath("/admin/employees")
@@ -35,13 +43,20 @@ export async function createEmployee(data: {
 
 export async function updateEmployee(
   id: string,
-  data: { name: string; role: "admin" | "employee"; defaultDays: string; color: string },
+  data: { name: string; role: "admin" | "employee"; defaultDays: string; color: string; hourlyRate?: number | null },
 ) {
   await requireAdmin()
 
   await db
     .update(user)
-    .set({ name: data.name, role: data.role, defaultDays: data.defaultDays || null, color: data.color || null, updatedAt: new Date() })
+    .set({
+      name: data.name,
+      role: data.role,
+      defaultDays: data.defaultDays || null,
+      color: data.color || null,
+      hourlyRate: data.hourlyRate != null ? String(data.hourlyRate) : null,
+      updatedAt: new Date(),
+    })
     .where(eq(user.id, id))
 
   revalidatePath("/admin/employees")

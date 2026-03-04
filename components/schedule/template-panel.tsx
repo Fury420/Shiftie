@@ -154,7 +154,7 @@ export function TemplatePanel({ employees, defaultFrom, defaultTo }: TemplatePan
   return (
     <div className="flex flex-col gap-3 rounded-xl border bg-muted/30 p-4">
       <div>
-        <p className="text-sm font-semibold">Šablóna smien</p>
+        <p className="text-sm font-semibold">Šablóna zmien</p>
         <p className="text-xs text-muted-foreground">
           Nastavte predvolené dni a časy pre každého zamestnanca
         </p>

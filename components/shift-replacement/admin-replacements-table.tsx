@@ -69,7 +69,7 @@ export function AdminReplacementsTable({ requests }: { requests: AdminReplacemen
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Smena</TableHead>
+            <TableHead>Zmena</TableHead>
             <TableHead>Žiadateľ</TableHead>
             <TableHead>Navrhnutý náhradník</TableHead>
             <TableHead>Poznámka</TableHead>

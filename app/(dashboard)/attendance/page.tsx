@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic"
 
 import { db } from "@/db"
-import { attendance, shifts } from "@/db/schema"
+import { attendance, shifts, user } from "@/db/schema"
 import { getSession } from "@/lib/session"
 import { eq, and, isNull, gte, lt } from "drizzle-orm"
 import { ClockCard } from "@/components/attendance/clock-card"
@@ -63,7 +63,7 @@ export default async function AttendancePage({
   const todayStr = now.toLocaleDateString("en-CA", { timeZone: TZ }) // YYYY-MM-DD
   console.log("[attendance] todayStr:", todayStr, "userId:", session.user.id)
 
-  const [openRecord, records, todayShift] = await Promise.all([
+  const [openRecord, records, todayShift, currentUser] = await Promise.all([
     db
       .select()
       .from(attendance)
@@ -89,6 +89,13 @@ export default async function AttendancePage({
       .where(and(eq(shifts.userId, session.user.id), eq(shifts.date, todayStr), eq(shifts.status, "published")))
       .limit(1)
       .then((r) => { console.log("[attendance] todayShift query result:", r); return r[0] ?? null }),
+
+    db
+      .select({ hourlyRate: user.hourlyRate })
+      .from(user)
+      .where(eq(user.id, session.user.id))
+      .limit(1)
+      .then((r) => r[0] ?? null),
   ])
 
   const formattedRecords = records.map((r) => {
@@ -115,6 +122,9 @@ export default async function AttendancePage({
     if (!r.clockOut) return sum
     return sum + (r.clockOut.getTime() - r.clockIn.getTime())
   }, 0)
+
+  const hourlyRate = currentUser?.hourlyRate != null ? parseFloat(currentUser.hourlyRate) : null
+  const monthlyWage = hourlyRate != null ? (totalMinutes / 60) * hourlyRate : null
 
   const monthLabel = new Date(year, monthNum - 1).toLocaleDateString("sk-SK", {
     month: "long",
@@ -148,6 +158,8 @@ export default async function AttendancePage({
         nextMonth={nextMonth}
         isCurrentMonth={isCurrentMonth}
         userName={session.user.name}
+        monthlyWage={monthlyWage}
+        hourlyRate={hourlyRate}
       />
     </div>
   )
