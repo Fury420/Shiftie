@@ -2,7 +2,7 @@
 
 import { db } from "@/db"
 import { shifts, user } from "@/db/schema"
-import { eq, inArray, and } from "drizzle-orm"
+import { eq, inArray, and, lt, gt, ne } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/auth-guard"
 import { toDateStr, addDays } from "@/lib/week"
@@ -13,6 +13,28 @@ function defaultTimes(dayOfWeek: number) {
   return { startTime: isWeekend ? "15:00" : "16:00", endTime: "21:00" }
 }
 
+async function checkConflict(
+  userId: string,
+  date: string,
+  startTime: string,
+  endTime: string,
+  excludeId?: string,
+) {
+  const conditions = [
+    eq(shifts.userId, userId),
+    eq(shifts.date, date),
+    lt(shifts.startTime, endTime),
+    gt(shifts.endTime, startTime),
+    ...(excludeId ? [ne(shifts.id, excludeId)] : []),
+  ]
+  const [conflict] = await db
+    .select({ id: shifts.id })
+    .from(shifts)
+    .where(and(...conditions))
+    .limit(1)
+  if (conflict) throw new Error("Tento zamestnanec má v tomto čase už inú zmenu.")
+}
+
 export async function createShift(data: {
   userId: string
   date: string
@@ -21,6 +43,7 @@ export async function createShift(data: {
   note?: string
 }) {
   await requireAdmin()
+  await checkConflict(data.userId, data.date, data.startTime, data.endTime)
 
   await db.insert(shifts).values({
     userId: data.userId,
@@ -40,6 +63,7 @@ export async function updateShift(
   data: { userId: string; date: string; startTime: string; endTime: string; note?: string },
 ) {
   await requireAdmin()
+  await checkConflict(data.userId, data.date, data.startTime, data.endTime, id)
 
   await db
     .update(shifts)

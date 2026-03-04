@@ -1,0 +1,47 @@
+export const dynamic = "force-dynamic"
+
+import { db } from "@/db"
+import { leaves, user } from "@/db/schema"
+import { eq, asc, desc, sql } from "drizzle-orm"
+import { requireAdmin } from "@/lib/auth-guard"
+import { AdminLeavesTable, type AdminLeaveRow } from "@/components/leaves/admin-leaves-table"
+
+export default async function AdminLeavesPage() {
+  await requireAdmin()
+
+  const records = await db
+    .select({
+      id: leaves.id,
+      userName: user.name,
+      type: leaves.type,
+      startDate: leaves.startDate,
+      endDate: leaves.endDate,
+      status: leaves.status,
+      note: leaves.note,
+      createdAt: leaves.createdAt,
+    })
+    .from(leaves)
+    .leftJoin(user, eq(leaves.userId, user.id))
+    .orderBy(
+      // pending first, then by creation date desc
+      sql`CASE WHEN ${leaves.status} = 'pending' THEN 0 ELSE 1 END`,
+      desc(leaves.createdAt),
+    )
+
+  const rows: AdminLeaveRow[] = records.map((r) => ({
+    id: r.id,
+    userName: r.userName ?? "—",
+    type: r.type,
+    startDate: r.startDate,
+    endDate: r.endDate,
+    status: r.status,
+    note: r.note ?? null,
+  }))
+
+  return (
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold">Dovolenky a voľno</h1>
+      <AdminLeavesTable rows={rows} />
+    </div>
+  )
+}
