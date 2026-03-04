@@ -14,10 +14,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { EditAttendanceDialog } from "@/components/attendance/edit-attendance-dialog"
 
 export interface AttendanceRecord {
   id: string
   date: string
+  dateStr: string       // YYYY-MM-DD in Bratislava TZ
   clockIn: string
   clockOut: string | null
   duration: string | null
@@ -104,6 +106,7 @@ export function AttendanceTable({
               <TableHead>Dátum</TableHead>
               <TableHead>Príchod – Odchod</TableHead>
               <TableHead className="text-right">Odpracované</TableHead>
+              <TableHead className="w-8" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -135,6 +138,16 @@ export function AttendanceTable({
                     )}
                   </TableCell>
                   <TableCell className="text-right font-mono text-sm">{r.duration ?? "—"}</TableCell>
+                  <TableCell className="text-right">
+                    {!r.isOpen && (
+                      <EditAttendanceDialog
+                        id={r.id}
+                        dateStr={r.dateStr}
+                        clockIn={r.clockIn}
+                        clockOut={r.clockOut!}
+                      />
+                    )}
+                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -148,6 +161,7 @@ export function AttendanceTable({
                 <TableCell className="text-right font-mono font-semibold tabular-nums">
                   {liveTotal ?? totalDuration}
                 </TableCell>
+                <TableCell />
               </TableRow>
             </TableFooter>
           )}

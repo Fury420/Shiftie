@@ -96,6 +96,7 @@ export default async function AttendancePage({
     return {
       id: r.id,
       date: formatDate(r.clockIn),
+      dateStr: r.clockIn.toLocaleDateString("en-CA", { timeZone: TZ }),
       clockIn: formatTime(r.clockIn),
       clockOut: r.clockOut ? formatTime(r.clockOut) : null,
       duration: r.clockOut ? formatDuration(roundTo15(r.clockOut.getTime() - r.clockIn.getTime())) : null,
