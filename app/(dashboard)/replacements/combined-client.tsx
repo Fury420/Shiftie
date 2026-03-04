@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Plus, Umbrella, ArrowLeftRight } from "lucide-react"
 import { LeaveRequestDialog } from "@/components/leaves/leave-request-dialog"
 import { EmployeeLeavesTable, type LeaveRow } from "@/components/leaves/employee-leaves-table"
 import { MyRequestsTable } from "@/components/shift-replacement/my-requests-table"
@@ -63,52 +64,59 @@ export function CombinedClient({
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
 
   return (
-    <div className="flex flex-col gap-8 max-w-4xl">
-      <h1 className="text-2xl font-semibold">Voľno & zastup</h1>
+    <div className="flex flex-col gap-6 max-w-4xl">
+      <h1 className="text-2xl font-semibold">Žiadosti</h1>
 
-      {/* ── Dovolenky ─────────────────────────────────────── */}
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-medium">Dovolenky a voľno</h2>
+      {/* ── Voľno ─────────────────────────────────────────── */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div className="flex items-center gap-2">
+            <Umbrella className="size-4 text-muted-foreground" />
+            <CardTitle className="text-base">Voľno</CardTitle>
+          </div>
           <Button size="sm" onClick={() => setLeaveDialogOpen(true)}>
             <Plus className="size-4" />
             Nová žiadosť
           </Button>
-        </div>
-        <EmployeeLeavesTable rows={leaves} />
-      </section>
+        </CardHeader>
+        <CardContent>
+          <EmployeeLeavesTable rows={leaves} />
+        </CardContent>
+      </Card>
 
       {/* ── Zastup ────────────────────────────────────────── */}
-      <section className="flex flex-col gap-3">
-        {isAdmin ? (
-          <>
-            <h2 className="text-lg font-medium">Čakajúce žiadosti o zastup</h2>
-            <p className="text-sm text-muted-foreground -mt-1">
-              Všetky žiadosti o zastup čakajúce na vybavenie.
-            </p>
-            <AdminReplacementsTable requests={allPendingRequests} />
-          </>
-        ) : (
-          <>
-            <h2 className="text-lg font-medium">Žiadosti o mňa</h2>
-            <p className="text-sm text-muted-foreground -mt-1">
-              Kolegovia ťa navrhli ako náhradníka na tieto zmeny.
-            </p>
-            <IncomingRequestsTable requests={incomingRequests} />
-          </>
-        )}
-      </section>
+      <Card>
+        <CardHeader className="space-y-0">
+          <div className="flex items-center gap-2">
+            <ArrowLeftRight className="size-4 text-muted-foreground" />
+            <CardTitle className="text-base">Zastup zmien</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-6">
+          {isAdmin ? (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-muted-foreground">Všetky čakajúce žiadosti o zastup.</p>
+              <AdminReplacementsTable requests={allPendingRequests} />
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-muted-foreground">Kolegovia ťa navrhli ako náhradníka.</p>
+              <IncomingRequestsTable requests={incomingRequests} />
+            </div>
+          )}
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Moje žiadosti o zastup</h2>
-        <MyRequestsTable
-          requests={myRequests}
-          monthLabel={monthLabel}
-          prevMonth={prevMonth}
-          nextMonth={nextMonth}
-          isCurrentMonth={isCurrentMonth}
-        />
-      </section>
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-medium">Moje žiadosti</p>
+            <MyRequestsTable
+              requests={myRequests}
+              monthLabel={monthLabel}
+              prevMonth={prevMonth}
+              nextMonth={nextMonth}
+              isCurrentMonth={isCurrentMonth}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       <LeaveRequestDialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen} />
     </div>

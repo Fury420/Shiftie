@@ -32,16 +32,12 @@ export interface AdminReplacementRequest {
   createdAt: string
 }
 
-const statusLabel: Record<AdminReplacementRequest["status"], string> = {
-  pending: "Čaká",
-  accepted: "Prijatá",
-  rejected: "Odmietnutá",
-}
-
-const statusVariant: Record<AdminReplacementRequest["status"], "secondary" | "default" | "destructive"> = {
-  pending: "secondary",
-  accepted: "default",
-  rejected: "destructive",
+function StatusBadge({ status }: { status: AdminReplacementRequest["status"] }) {
+  if (status === "accepted")
+    return <Badge className="bg-green-500/15 text-green-700 hover:bg-green-500/15 border-0">Prijatá</Badge>
+  if (status === "rejected")
+    return <Badge variant="destructive" className="border-0">Odmietnutá</Badge>
+  return <Badge className="bg-yellow-500/15 text-yellow-700 hover:bg-yellow-500/15 border-0">Čaká</Badge>
 }
 
 export function AdminReplacementsTable({ requests }: { requests: AdminReplacementRequest[] }) {
@@ -97,7 +93,7 @@ export function AdminReplacementsTable({ requests }: { requests: AdminReplacemen
                 <TableCell className="text-muted-foreground max-w-48 truncate">{r.note ?? "—"}</TableCell>
                 <TableCell className="text-muted-foreground text-sm">{r.createdAt}</TableCell>
                 <TableCell>
-                  <Badge variant={statusVariant[r.status]}>{statusLabel[r.status]}</Badge>
+                  <StatusBadge status={r.status} />
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
