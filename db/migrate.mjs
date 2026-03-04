@@ -9,5 +9,10 @@ await client`
   ADD COLUMN IF NOT EXISTS "must_change_password" boolean DEFAULT false NOT NULL
 `
 
+await client`
+  ALTER TABLE "user"
+  ADD COLUMN IF NOT EXISTS "hourly_rate" numeric(8, 2)
+`
+
 console.log("Migrations complete")
 await client.end()
