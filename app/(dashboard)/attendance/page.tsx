@@ -63,7 +63,7 @@ export default async function AttendancePage({
   const todayStr = now.toLocaleDateString("en-CA", { timeZone: TZ }) // YYYY-MM-DD
   console.log("[attendance] todayStr:", todayStr, "userId:", session.user.id)
 
-  const [openRecord, records, todayShift, currentUser] = await Promise.all([
+  const [openRecord, records, todayShifts, currentUser] = await Promise.all([
     db
       .select()
       .from(attendance)
@@ -87,8 +87,7 @@ export default async function AttendancePage({
       .select({ startTime: shifts.startTime, endTime: shifts.endTime })
       .from(shifts)
       .where(and(eq(shifts.userId, session.user.id), eq(shifts.date, todayStr), eq(shifts.status, "published")))
-      .limit(1)
-      .then((r) => { console.log("[attendance] todayShift query result:", r); return r[0] ?? null }),
+      .orderBy(shifts.startTime),
 
     db
       .select({ hourlyRate: user.hourlyRate })
@@ -145,7 +144,7 @@ export default async function AttendancePage({
       <ClockCard
         isActive={!!openRecord}
         clockInTime={openRecord?.clockIn.toISOString() ?? null}
-        scheduledShift={todayShift}
+        scheduledShifts={todayShifts}
       />
 
       <AttendanceTable

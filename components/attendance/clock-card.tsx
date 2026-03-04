@@ -9,7 +9,7 @@ import { clockIn, clockOut } from "@/app/actions/attendance"
 interface ClockCardProps {
   isActive: boolean
   clockInTime: string | null // ISO string
-  scheduledShift: { startTime: string; endTime: string } | null
+  scheduledShifts: { startTime: string; endTime: string }[]
 }
 
 function formatElapsed(ms: number) {
@@ -20,7 +20,7 @@ function formatElapsed(ms: number) {
   return [h, m, sec].map((v) => String(v).padStart(2, "0")).join(":")
 }
 
-export function ClockCard({ isActive, clockInTime, scheduledShift }: ClockCardProps) {
+export function ClockCard({ isActive, clockInTime, scheduledShifts }: ClockCardProps) {
   const [elapsed, setElapsed] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -66,14 +66,18 @@ export function ClockCard({ isActive, clockInTime, scheduledShift }: ClockCardPr
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-0.5">
             <p className="text-sm text-muted-foreground capitalize">{today}</p>
-            {scheduledShift && (
-              <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                <CalendarClock className="size-3.5 shrink-0" />
-                Zmena:{" "}
-                <span className="font-medium text-foreground">
-                  {scheduledShift.startTime.slice(0, 5)} – {scheduledShift.endTime.slice(0, 5)}
-                </span>
-              </p>
+            {scheduledShifts.length > 0 && (
+              <div className="flex flex-col gap-0.5">
+                {scheduledShifts.map((s, i) => (
+                  <p key={i} className="text-sm text-muted-foreground flex items-center gap-1.5">
+                    <CalendarClock className="size-3.5 shrink-0" />
+                    {scheduledShifts.length > 1 ? `Zmena ${i + 1}:` : "Zmena:"}{" "}
+                    <span className="font-medium text-foreground">
+                      {s.startTime.slice(0, 5)} – {s.endTime.slice(0, 5)}
+                    </span>
+                  </p>
+                ))}
+              </div>
             )}
             {isActive && clockInFormatted && (
               <p className="text-sm text-muted-foreground">
