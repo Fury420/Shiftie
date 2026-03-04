@@ -9,6 +9,7 @@ import { EmployeeLeavesTable, type LeaveRow } from "@/components/leaves/employee
 import { MyRequestsTable } from "@/components/shift-replacement/my-requests-table"
 import { IncomingRequestsTable } from "@/components/shift-replacement/incoming-requests-table"
 import { AdminReplacementsTable } from "@/components/shift-replacement/admin-replacements-table"
+import { NewReplacementDialog, type ShiftOption, type ColleagueOption } from "@/components/shift-replacement/new-replacement-dialog"
 
 interface MyRequest {
   id: string
@@ -48,6 +49,8 @@ interface Props {
   prevMonth: string
   nextMonth: string
   isCurrentMonth: boolean
+  myShifts: ShiftOption[]
+  colleagues: ColleagueOption[]
 }
 
 export function CombinedClient({
@@ -60,8 +63,11 @@ export function CombinedClient({
   prevMonth,
   nextMonth,
   isCurrentMonth,
+  myShifts,
+  colleagues,
 }: Props) {
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
+  const [replacementDialogOpen, setReplacementDialogOpen] = useState(false)
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl">
@@ -86,11 +92,15 @@ export function CombinedClient({
 
       {/* ── Zastup ────────────────────────────────────────── */}
       <Card>
-        <CardHeader className="space-y-0">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div className="flex items-center gap-2">
             <ArrowLeftRight className="size-4 text-muted-foreground" />
             <CardTitle className="text-base">Zastup zmien</CardTitle>
           </div>
+          <Button size="sm" variant="outline" onClick={() => setReplacementDialogOpen(true)}>
+            <Plus className="size-4" />
+            Požiadať o zastup
+          </Button>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
           {isAdmin ? (
@@ -119,6 +129,12 @@ export function CombinedClient({
       </Card>
 
       <LeaveRequestDialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen} />
+      <NewReplacementDialog
+        open={replacementDialogOpen}
+        onOpenChange={setReplacementDialogOpen}
+        myShifts={myShifts}
+        colleagues={colleagues}
+      />
     </div>
   )
 }

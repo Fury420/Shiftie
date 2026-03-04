@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic"
 
 import { db } from "@/db"
-import { shifts, user } from "@/db/schema"
+import { shifts, user, leaves } from "@/db/schema"
 import { eq, and, gte, lte, asc } from "drizzle-orm"
 import { getSession } from "@/lib/session"
 import { redirect } from "next/navigation"
@@ -25,7 +25,7 @@ export default async function SchedulePage({
   const endDate = toDateStr(weeks[weeks.length - 1][6])
   const todayStr = toDateStr(new Date())
 
-  const [monthShifts, employees] = await Promise.all([
+  const [monthShifts, employees, approvedLeaves] = await Promise.all([
     db
       .select({
         id: shifts.id,
@@ -49,7 +49,17 @@ export default async function SchedulePage({
       .select({ id: user.id, name: user.name, color: user.color })
       .from(user)
       .orderBy(asc(user.name)),
+
+    db
+      .select({ userId: leaves.userId, startDate: leaves.startDate, endDate: leaves.endDate })
+      .from(leaves)
+      .where(and(eq(leaves.status, "approved"), lte(leaves.startDate, endDate), gte(leaves.endDate, startDate))),
   ])
+
+  const onLeave = (userId: string, date: string) =>
+    approvedLeaves.some((l) => l.userId === userId && l.startDate <= date && l.endDate >= date)
+
+  const visibleShifts = monthShifts.filter((s) => !onLeave(s.userId, s.date))
 
   const colorMap = new Map(
     employees.map((e) => ({ id: e.id, name: e.name, color: e.color ?? "#6b7280" }))
@@ -59,7 +69,7 @@ export default async function SchedulePage({
   const calendarWeeks: CalendarDay[][] = weeks.map((week) =>
     week.map((date) => {
       const dateStr = toDateStr(date)
-      const dayShifts: CalendarShift[] = monthShifts
+      const dayShifts: CalendarShift[] = visibleShifts
         .filter((s) => s.date === dateStr)
         .map((s) => {
           const emp = colorMap.get(s.userId)

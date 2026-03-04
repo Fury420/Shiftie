@@ -2,17 +2,11 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, ArrowLeftRight, Umbrella } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { RequestDialog, type ColleagueOption } from "@/components/shift-replacement/request-dialog"
 import { LeaveRequestDialog } from "@/components/leaves/leave-request-dialog"
+import type { ColleagueOption } from "@/components/shift-replacement/request-dialog"
 
 export interface CalendarShift {
   id: string
@@ -51,7 +45,6 @@ interface LeaveContext {
 const DAY_LABELS = ["Po", "Ut", "St", "Št", "Pi", "So", "Ne"]
 
 export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmployees }: MonthCalendarProps) {
-  const [dialogShift, setDialogShift] = useState<CalendarShift & { dateLabel: string } | null>(null)
   const [leaveCtx, setLeaveCtx] = useState<LeaveContext | null>(null)
 
   function openLeave(day: CalendarDay, shift: CalendarShift) {
@@ -61,19 +54,6 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
       shiftLabel: `${shift.startTime}–${shift.endTime}`,
       colleagues: allEmployees.filter((e) => e.id !== shift.userId),
     })
-  }
-
-  function ShiftContent({ shift }: { shift: CalendarShift; mobile?: boolean }) {
-    return (
-      <>
-        <div className="text-sm font-semibold md:text-xs md:leading-tight" style={{ color: shift.color }}>
-          {shift.userName.split(" ")[0]}
-        </div>
-        <div className="text-xs opacity-75 md:opacity-80" style={{ color: shift.color }}>
-          {shift.startTime}–{shift.endTime}
-        </div>
-      </>
-    )
   }
 
   return (
@@ -129,35 +109,22 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
               ) : (
                 <div className="flex flex-col gap-1.5 pl-10">
                   {day.shifts.map((shift) => {
-                    const hasMenu = shift.canRequest && !isPast
+                    const clickable = shift.isCurrentUser && !isPast
                     const baseStyle = { backgroundColor: shift.color + "28", borderLeft: `3px solid ${shift.color}` }
-                    if (!hasMenu) {
-                      return (
-                        <div key={shift.id} className="rounded-lg px-3 py-2" style={baseStyle}>
-                          <ShiftContent shift={shift} />
-                        </div>
-                      )
-                    }
                     return (
-                      <DropdownMenu key={shift.id}>
-                        <DropdownMenuTrigger asChild>
-                          <div className="rounded-lg px-3 py-2 cursor-pointer hover:opacity-80 transition-opacity" style={baseStyle}>
-                            <ShiftContent shift={shift} />
-                          </div>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent side="bottom" align="start" className="w-48">
-                          <DropdownMenuItem onSelect={() => setDialogShift({ ...shift, dateLabel: day.date })}>
-                            <ArrowLeftRight className="size-4" />
-                            Požiadať o zastup
-                          </DropdownMenuItem>
-                          {shift.isCurrentUser && (
-                            <DropdownMenuItem onSelect={() => openLeave(day, shift)}>
-                              <Umbrella className="size-4" />
-                              Požiadať o voľno
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div
+                        key={shift.id}
+                        className={cn("rounded-lg px-3 py-2 transition-opacity", clickable && "cursor-pointer hover:opacity-80")}
+                        style={baseStyle}
+                        onClick={clickable ? () => openLeave(day, shift) : undefined}
+                      >
+                        <div className="text-sm font-semibold" style={{ color: shift.color }}>
+                          {shift.userName.split(" ")[0]}
+                        </div>
+                        <div className="text-xs opacity-75" style={{ color: shift.color }}>
+                          {shift.startTime}–{shift.endTime}
+                        </div>
+                      </div>
                     )
                   })}
                 </div>
@@ -206,44 +173,25 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
                   <div className="flex flex-col gap-0.5">
                     {day.shifts.map((shift) => {
                       const isPast = day.date < new Date().toISOString().slice(0, 10)
-                      const hasMenu = shift.canRequest && !isPast
+                      const clickable = shift.isCurrentUser && !isPast
                       const baseStyle = {
                         backgroundColor: shift.color + "28",
                         borderLeft: `3px solid ${shift.color}`,
                         color: shift.color,
                       }
-                      if (!hasMenu) {
-                        return (
-                          <div key={shift.id} className="rounded px-1.5 py-0.5 text-xs leading-tight" style={baseStyle}>
-                            <div className="truncate">{shift.userName.split(" ")[0]}</div>
-                            <div className="opacity-80">{shift.startTime}–{shift.endTime}</div>
-                          </div>
-                        )
-                      }
                       return (
-                        <DropdownMenu key={shift.id}>
-                          <DropdownMenuTrigger asChild>
-                            <div
-                              className="rounded px-1.5 py-0.5 text-xs leading-tight font-semibold cursor-pointer hover:opacity-75 transition-opacity"
-                              style={baseStyle}
-                            >
-                              <div className="truncate">{shift.userName.split(" ")[0]}</div>
-                              <div className="opacity-80">{shift.startTime}–{shift.endTime}</div>
-                            </div>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent side="bottom" align="start" className="w-48">
-                            <DropdownMenuItem onSelect={() => setDialogShift({ ...shift, dateLabel: day.date })}>
-                              <ArrowLeftRight className="size-4" />
-                              Požiadať o zastup
-                            </DropdownMenuItem>
-                            {shift.isCurrentUser && (
-                              <DropdownMenuItem onSelect={() => openLeave(day, shift)}>
-                                <Umbrella className="size-4" />
-                                Požiadať o voľno
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <div
+                          key={shift.id}
+                          className={cn(
+                            "rounded px-1.5 py-0.5 text-xs leading-tight",
+                            clickable && "font-semibold cursor-pointer hover:opacity-75 transition-opacity",
+                          )}
+                          style={baseStyle}
+                          onClick={clickable ? () => openLeave(day, shift) : undefined}
+                        >
+                          <div className="truncate">{shift.userName.split(" ")[0]}</div>
+                          <div className="opacity-80">{shift.startTime}–{shift.endTime}</div>
+                        </div>
                       )
                     })}
                   </div>
@@ -253,20 +201,6 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
           </div>
         ))}
       </div>
-
-      {dialogShift && (
-        <RequestDialog
-          open={!!dialogShift}
-          onOpenChange={(open) => { if (!open) setDialogShift(null) }}
-          shift={{
-            id: dialogShift.id,
-            date: dialogShift.dateLabel,
-            startTime: dialogShift.startTime,
-            endTime: dialogShift.endTime,
-          }}
-          colleagues={allEmployees.filter((e) => e.id !== dialogShift.userId)}
-        />
-      )}
 
       <LeaveRequestDialog
         open={!!leaveCtx}

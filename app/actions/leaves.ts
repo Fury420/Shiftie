@@ -99,6 +99,8 @@ export async function adminUpdateLeaveStatus(id: string, status: "approved" | "r
 
   revalidatePath("/leaves")
   revalidatePath("/admin/leaves")
+  revalidatePath("/schedule")
+  revalidatePath("/replacements")
 }
 
 export async function adminDeleteLeave(id: string) {

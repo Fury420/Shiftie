@@ -3,10 +3,12 @@ export const dynamic = "force-dynamic"
 import { db } from "@/db"
 import { shiftReplacements, shifts, user, leaves } from "@/db/schema"
 import { getSession } from "@/lib/session"
-import { eq, and, gte, lt, desc } from "drizzle-orm"
+import { eq, and, gte, lt, desc, isNull, ne } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
 import { shortTime } from "@/lib/week"
 import { CombinedClient } from "./combined-client"
+
+const TZ = "Europe/Bratislava"
 
 function formatShiftDate(dateStr: string) {
   const [y, m, d] = dateStr.split("-").map(Number)
@@ -59,7 +61,9 @@ export default async function ZastupPage({
   const requester = alias(user, "requester")
   const replacement = alias(user, "replacement")
 
-  const [myRequests, incomingRequests, allPendingRequests, leavesData] = await Promise.all([
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: TZ })
+
+  const [myRequests, incomingRequests, allPendingRequests, leavesData, upcomingShiftsRaw, colleaguesRaw] = await Promise.all([
     db
       .select({
         id: shiftReplacements.id,
@@ -134,6 +138,18 @@ export default async function ZastupPage({
       .from(leaves)
       .where(eq(leaves.userId, userId))
       .orderBy(desc(leaves.createdAt)),
+
+    db
+      .select({ id: shifts.id, date: shifts.date, startTime: shifts.startTime, endTime: shifts.endTime })
+      .from(shifts)
+      .where(and(eq(shifts.userId, userId), gte(shifts.date, todayStr), eq(shifts.status, "published")))
+      .orderBy(shifts.date),
+
+    db
+      .select({ id: user.id, name: user.name })
+      .from(user)
+      .where(and(isNull(user.archivedAt), ne(user.id, userId)))
+      .orderBy(user.name),
   ])
 
   const myFormatted = myRequests.map((r) => ({
@@ -166,6 +182,12 @@ export default async function ZastupPage({
       : "",
   }))
 
+  const myShifts = upcomingShiftsRaw.map((s) => {
+    const [y, m, d] = s.date.split("-").map(Number)
+    const dateLabel = new Date(y, m - 1, d).toLocaleDateString("sk-SK", { weekday: "short", day: "numeric", month: "numeric" })
+    return { id: s.id, label: `${dateLabel} ${shortTime(s.startTime)}–${shortTime(s.endTime)}` }
+  })
+
   return (
     <CombinedClient
       leaves={leavesData}
@@ -177,6 +199,8 @@ export default async function ZastupPage({
       prevMonth={prevMonth}
       nextMonth={nextMonth}
       isCurrentMonth={isCurrentMonth}
+      myShifts={myShifts}
+      colleagues={colleaguesRaw}
     />
   )
 }
