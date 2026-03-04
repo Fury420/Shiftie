@@ -2,16 +2,10 @@
 
 import { db } from "@/db"
 import { shifts, user } from "@/db/schema"
-import { eq, inArray, and, lt, gt, ne } from "drizzle-orm"
+import { eq, inArray, and, lt, gt, ne, isNull } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-import { requireAdmin } from "@/lib/auth-guard"
+import { requireAdmin, getOrganizationId } from "@/lib/auth-guard"
 import { toDateStr, addDays } from "@/lib/week"
-
-// Mon–Thu: 16:00–21:00 | Fri–Sun: 15:00–21:00
-function defaultTimes(dayOfWeek: number) {
-  const isWeekend = dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0
-  return { startTime: isWeekend ? "15:00" : "16:00", endTime: "21:00" }
-}
 
 async function checkConflict(
   userId: string,
@@ -43,9 +37,11 @@ export async function createShift(data: {
   note?: string
 }) {
   await requireAdmin()
+  const orgId = await getOrganizationId()
   await checkConflict(data.userId, data.date, data.startTime, data.endTime)
 
   await db.insert(shifts).values({
+    organizationId: orgId,
     userId: data.userId,
     date: data.date,
     startTime: data.startTime,
@@ -63,6 +59,7 @@ export async function updateShift(
   data: { userId: string; date: string; startTime: string; endTime: string; note?: string },
 ) {
   await requireAdmin()
+  const orgId = await getOrganizationId()
   await checkConflict(data.userId, data.date, data.startTime, data.endTime, id)
 
   await db
@@ -75,7 +72,7 @@ export async function updateShift(
       note: data.note || null,
       updatedAt: new Date(),
     })
-    .where(eq(shifts.id, id))
+    .where(and(eq(shifts.id, id), eq(shifts.organizationId, orgId)))
 
   revalidatePath("/admin/schedule")
   revalidatePath("/schedule")
@@ -83,24 +80,28 @@ export async function updateShift(
 
 export async function deleteShift(id: string) {
   await requireAdmin()
-  await db.delete(shifts).where(eq(shifts.id, id))
+  const orgId = await getOrganizationId()
+
+  await db.delete(shifts).where(and(eq(shifts.id, id), eq(shifts.organizationId, orgId)))
+
   revalidatePath("/admin/schedule")
   revalidatePath("/schedule")
 }
 
 export async function toggleShiftStatus(id: string, current: "draft" | "published") {
   await requireAdmin()
+  const orgId = await getOrganizationId()
 
   await db
     .update(shifts)
     .set({ status: current === "draft" ? "published" : "draft", updatedAt: new Date() })
-    .where(eq(shifts.id, id))
+    .where(and(eq(shifts.id, id), eq(shifts.organizationId, orgId)))
 
   revalidatePath("/admin/schedule")
   revalidatePath("/schedule")
 }
 
-async function generateShiftsForDates(dates: Date[]) {
+async function generateShiftsForDates(dates: Date[], orgId: string) {
   const employees = await db
     .select({
       id: user.id,
@@ -109,6 +110,7 @@ async function generateShiftsForDates(dates: Date[]) {
       defaultEndTime: user.defaultEndTime,
     })
     .from(user)
+    .where(and(eq(user.organizationId, orgId), isNull(user.archivedAt)))
 
   for (const day of dates) {
     const dateStr = toDateStr(day)
@@ -129,6 +131,7 @@ async function generateShiftsForDates(dates: Date[]) {
       if (existing) continue
 
       await db.insert(shifts).values({
+        organizationId: orgId,
         userId: emp.id,
         date: dateStr,
         startTime: emp.defaultStartTime.slice(0, 5),
@@ -141,12 +144,13 @@ async function generateShiftsForDates(dates: Date[]) {
 
 export async function generateDefaultWeek(mondayStr: string) {
   await requireAdmin()
+  const orgId = await getOrganizationId()
 
   const dates = Array.from({ length: 7 }, (_, i) =>
     addDays(new Date(mondayStr + "T12:00:00"), i),
   )
 
-  await generateShiftsForDates(dates)
+  await generateShiftsForDates(dates, orgId)
 
   revalidatePath("/admin/schedule")
   revalidatePath("/schedule")
@@ -154,6 +158,7 @@ export async function generateDefaultWeek(mondayStr: string) {
 
 export async function generateDefaultMonth(monthStr: string) {
   await requireAdmin()
+  const orgId = await getOrganizationId()
 
   const [y, m] = monthStr.split("-").map(Number)
   const daysInMonth = new Date(y, m, 0).getDate()
@@ -162,7 +167,7 @@ export async function generateDefaultMonth(monthStr: string) {
     new Date(y, m - 1, i + 1, 12, 0, 0),
   )
 
-  await generateShiftsForDates(dates)
+  await generateShiftsForDates(dates, orgId)
 
   revalidatePath("/admin/schedule")
   revalidatePath("/schedule")
@@ -170,6 +175,7 @@ export async function generateDefaultMonth(monthStr: string) {
 
 export async function generateDefaultRange(fromStr: string, toStr: string) {
   await requireAdmin()
+  const orgId = await getOrganizationId()
 
   const [fy, fm, fd] = fromStr.split("-").map(Number)
   const [ty, tm, td] = toStr.split("-").map(Number)
@@ -184,7 +190,7 @@ export async function generateDefaultRange(fromStr: string, toStr: string) {
     cur = addDays(cur, 1)
   }
 
-  await generateShiftsForDates(dates)
+  await generateShiftsForDates(dates, orgId)
 
   revalidatePath("/admin/schedule")
   revalidatePath("/schedule")
@@ -195,6 +201,7 @@ export async function updateEmployeeTemplate(
   data: { defaultDays: string; defaultStartTime: string; defaultEndTime: string },
 ) {
   await requireAdmin()
+  const orgId = await getOrganizationId()
 
   await db
     .update(user)
@@ -204,19 +211,20 @@ export async function updateEmployeeTemplate(
       defaultEndTime: data.defaultEndTime || null,
       updatedAt: new Date(),
     })
-    .where(eq(user.id, userId))
+    .where(and(eq(user.id, userId), eq(user.organizationId, orgId)))
 
   revalidatePath("/admin/schedule")
 }
 
 export async function publishDraftShifts(ids: string[]) {
   await requireAdmin()
+  const orgId = await getOrganizationId()
   if (ids.length === 0) return
 
   await db
     .update(shifts)
     .set({ status: "published", updatedAt: new Date() })
-    .where(inArray(shifts.id, ids))
+    .where(and(inArray(shifts.id, ids), eq(shifts.organizationId, orgId)))
 
   revalidatePath("/admin/schedule")
   revalidatePath("/schedule")

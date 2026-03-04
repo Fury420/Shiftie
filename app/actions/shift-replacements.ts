@@ -3,18 +3,19 @@
 import { db } from "@/db"
 import { shifts, shiftReplacements } from "@/db/schema"
 import { getSession } from "@/lib/session"
-import { requireAdmin } from "@/lib/auth-guard"
+import { requireAdmin, getOrganizationId } from "@/lib/auth-guard"
 import { eq, and } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 export async function requestReplacement(shiftId: string, replacementUserId: string, note?: string) {
   const session = await getSession()
   if (!session) throw new Error("Neprihlásený")
+  const orgId = await getOrganizationId()
 
   const [shift] = await db
-    .select({ userId: shifts.userId, date: shifts.date })
+    .select({ userId: shifts.userId, date: shifts.date, organizationId: shifts.organizationId })
     .from(shifts)
-    .where(eq(shifts.id, shiftId))
+    .where(and(eq(shifts.id, shiftId), eq(shifts.organizationId, orgId)))
     .limit(1)
 
   if (!shift) throw new Error("Zmena neexistuje")
@@ -35,6 +36,7 @@ export async function requestReplacement(shiftId: string, replacementUserId: str
   if (existing) throw new Error("Pre túto zmenu už existuje čakajúca žiadosť")
 
   await db.insert(shiftReplacements).values({
+    organizationId: orgId,
     shiftId,
     requestedByUserId: session.user.id,
     replacementUserId,
@@ -77,12 +79,13 @@ export async function respondToReplacement(id: string, response: "accepted" | "r
 
 export async function adminResolveReplacement(id: string, response: "accepted" | "rejected") {
   await requireAdmin()
+  const orgId = await getOrganizationId()
 
   await db.transaction(async (tx) => {
     const [replacement] = await tx
       .select()
       .from(shiftReplacements)
-      .where(and(eq(shiftReplacements.id, id), eq(shiftReplacements.status, "pending")))
+      .where(and(eq(shiftReplacements.id, id), eq(shiftReplacements.status, "pending"), eq(shiftReplacements.organizationId, orgId)))
       .limit(1)
 
     if (!replacement) throw new Error("Žiadosť už bola vybavená")
@@ -107,8 +110,9 @@ export async function adminResolveReplacement(id: string, response: "accepted" |
 
 export async function adminDeleteReplacement(id: string) {
   await requireAdmin()
+  const orgId = await getOrganizationId()
 
-  await db.delete(shiftReplacements).where(eq(shiftReplacements.id, id))
+  await db.delete(shiftReplacements).where(and(eq(shiftReplacements.id, id), eq(shiftReplacements.organizationId, orgId)))
 
   revalidatePath("/admin/replacements")
   revalidatePath("/replacements")

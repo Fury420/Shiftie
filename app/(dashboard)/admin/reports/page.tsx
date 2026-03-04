@@ -41,7 +41,8 @@ export default async function AdminReportsPage({
 }: {
   searchParams: Promise<{ month?: string }>
 }) {
-  await requireAdmin()
+  const session = await requireAdmin()
+  const orgId = (session.user as { organizationId?: string | null }).organizationId!
 
   const { month } = await searchParams
   const now = new Date()
@@ -70,6 +71,7 @@ export default async function AdminReportsPage({
     .leftJoin(user, eq(attendance.userId, user.id))
     .where(
       and(
+        eq(attendance.organizationId, orgId),
         isNotNull(attendance.clockOut),
         gte(attendance.clockIn, start),
         lt(attendance.clockIn, end),

@@ -13,7 +13,8 @@ export default async function AdminSchedulePage({
 }: {
   searchParams: Promise<{ month?: string }>
 }) {
-  await requireAdmin()
+  const session = await requireAdmin()
+  const orgId = (session.user as { organizationId?: string | null }).organizationId!
 
   const { month } = await searchParams
   const { year, monthNum, weeks } = getMonthGrid(month)
@@ -37,7 +38,7 @@ export default async function AdminSchedulePage({
         status: shifts.status,
       })
       .from(shifts)
-      .where(and(gte(shifts.date, startDate), lte(shifts.date, endDate)))
+      .where(and(eq(shifts.organizationId, orgId), gte(shifts.date, startDate), lte(shifts.date, endDate)))
       .orderBy(asc(shifts.startTime)),
 
     db
@@ -51,6 +52,7 @@ export default async function AdminSchedulePage({
         defaultEndTime: user.defaultEndTime,
       })
       .from(user)
+      .where(eq(user.organizationId, orgId))
       .orderBy(asc(user.name)),
   ])
 

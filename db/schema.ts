@@ -2,11 +2,20 @@ import { pgTable, text, timestamp, pgEnum, date, time, uuid, boolean, decimal } 
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
-export const roleEnum = pgEnum("role", ["admin", "employee"])
+export const roleEnum = pgEnum("role", ["superadmin", "admin", "employee"])
 export const shiftStatusEnum = pgEnum("shift_status", ["draft", "published"])
 export const leaveTypeEnum = pgEnum("leave_type", ["vacation", "sick", "personal"])
 export const leaveStatusEnum = pgEnum("leave_status", ["pending", "approved", "rejected"])
 export const replacementStatusEnum = pgEnum("replacement_status", ["pending", "accepted", "rejected"])
+
+// ─── Organizations ────────────────────────────────────────────────────────────
+
+export const organizations = pgTable("organizations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
 
 // ─── Better Auth tables ───────────────────────────────────────────────────────
 
@@ -17,6 +26,7 @@ export const user = pgTable("user", {
   emailVerified: boolean("email_verified").notNull(),
   image: text("image"),
   role: roleEnum("role").notNull().default("employee"),
+  organizationId: uuid("organization_id").references(() => organizations.id, { onDelete: "set null" }),
   color: text("color"), // hex color e.g. "#3b82f6"
   archivedAt: timestamp("archived_at"),
   mustChangePassword: boolean("must_change_password").notNull().default(false),
@@ -72,6 +82,9 @@ export const verification = pgTable("verification", {
 
 export const shifts = pgTable("shifts", {
   id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
@@ -86,6 +99,9 @@ export const shifts = pgTable("shifts", {
 
 export const attendance = pgTable("attendance", {
   id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
@@ -100,6 +116,9 @@ export const attendance = pgTable("attendance", {
 
 export const leaves = pgTable("leaves", {
   id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
@@ -115,6 +134,9 @@ export const leaves = pgTable("leaves", {
 
 export const shiftReplacements = pgTable("shift_replacements", {
   id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
   shiftId: uuid("shift_id")
     .notNull()
     .references(() => shifts.id, { onDelete: "cascade" }),

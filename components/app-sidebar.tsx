@@ -32,7 +32,7 @@ const adminNav = [
 ]
 
 interface AppSidebarProps {
-  user: { name: string; email: string; role: string; color?: string | null }
+  user: { name: string; email: string; role: string; color?: string | null; organizationName?: string | null }
   pendingReplacementCount: number
 }
 
@@ -42,10 +42,13 @@ export function AppSidebar({ user, pendingReplacementCount }: AppSidebarProps) {
 
   return (
     <Sidebar collapsible="offcanvas">
-      <SidebarHeader className="px-4 py-4 flex items-center justify-center">
+      <SidebarHeader className="px-4 py-4 flex flex-col items-center gap-1">
         <Link href="/" onClick={() => setOpenMobile(false)}>
           <Image src="/logo.png" alt="Shiftie" width={160} height={44} className="object-contain" unoptimized />
         </Link>
+        {user.organizationName && (
+          <p className="text-xs text-muted-foreground text-center truncate w-full">{user.organizationName}</p>
+        )}
       </SidebarHeader>
 
       <SidebarContent>

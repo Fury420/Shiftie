@@ -24,7 +24,7 @@ import { createEmployee, updateEmployee } from "@/app/actions/employees"
 export interface EmployeeForEdit {
   id: string
   name: string
-  role: "admin" | "employee"
+  role: "superadmin" | "admin" | "employee"
   defaultDays: string
   color: string
   hourlyRate: number | null
@@ -75,7 +75,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
       setName(employee?.name ?? "")
       setEmail("")
       setPassword("")
-      setRole(employee?.role ?? "employee")
+      setRole((employee?.role === "admin" ? "admin" : "employee") as "admin" | "employee")
       setSelectedDays(
         employee?.defaultDays
           ? employee.defaultDays.split(",").map(Number)

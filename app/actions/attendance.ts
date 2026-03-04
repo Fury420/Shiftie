@@ -3,13 +3,14 @@
 import { db } from "@/db"
 import { attendance } from "@/db/schema"
 import { getSession } from "@/lib/session"
-import { requireAdmin } from "@/lib/auth-guard"
+import { requireAdmin, getOrganizationId } from "@/lib/auth-guard"
 import { eq, and, isNull } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 export async function clockIn() {
   const session = await getSession()
   if (!session) throw new Error("Neprihlásený")
+  const orgId = await getOrganizationId()
 
   const [open] = await db
     .select({ id: attendance.id })
@@ -20,6 +21,7 @@ export async function clockIn() {
   if (open) return
 
   await db.insert(attendance).values({
+    organizationId: orgId,
     userId: session.user.id,
     clockIn: new Date(),
   })
@@ -86,19 +88,21 @@ export async function updateOwnAttendance(
 
 export async function adminUpdateAttendance(id: string, clockIn: string, clockOut: string) {
   const session = await requireAdmin()
+  const orgId = await getOrganizationId()
 
   await db
     .update(attendance)
     .set({ clockIn: new Date(clockIn), clockOut: new Date(clockOut), editedAt: new Date(), editedBy: session.user.id })
-    .where(eq(attendance.id, id))
+    .where(and(eq(attendance.id, id), eq(attendance.organizationId, orgId)))
 
   revalidatePath("/admin/reports")
 }
 
 export async function adminDeleteAttendance(id: string) {
   await requireAdmin()
+  const orgId = await getOrganizationId()
 
-  await db.delete(attendance).where(eq(attendance.id, id))
+  await db.delete(attendance).where(and(eq(attendance.id, id), eq(attendance.organizationId, orgId)))
 
   revalidatePath("/admin/reports")
 }

@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic"
 import { db } from "@/db"
 import { shiftReplacements, shifts, user } from "@/db/schema"
 import { requireAdmin } from "@/lib/auth-guard"
-import { eq } from "drizzle-orm"
+import { eq, and } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
 import { AdminReplacementsTable } from "@/components/shift-replacement/admin-replacements-table"
 import { shortTime } from "@/lib/week"
@@ -19,7 +19,8 @@ function formatShiftDate(dateStr: string) {
 }
 
 export default async function AdminZastupPage() {
-  await requireAdmin()
+  const session = await requireAdmin()
+  const orgId = (session.user as { organizationId?: string | null }).organizationId!
 
   const requester = alias(user, "requester")
   const replacement = alias(user, "replacement")
@@ -40,6 +41,7 @@ export default async function AdminZastupPage() {
     .innerJoin(shifts, eq(shiftReplacements.shiftId, shifts.id))
     .innerJoin(requester, eq(shiftReplacements.requestedByUserId, requester.id))
     .innerJoin(replacement, eq(shiftReplacements.replacementUserId, replacement.id))
+    .where(eq(shiftReplacements.organizationId, orgId))
     .orderBy(shiftReplacements.createdAt)
 
   const formatted = rows.map((r) => ({

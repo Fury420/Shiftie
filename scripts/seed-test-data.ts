@@ -45,6 +45,7 @@ async function main() {
     .select({
       id: user.id,
       name: user.name,
+      organizationId: user.organizationId,
       defaultDays: user.defaultDays,
       defaultStartTime: user.defaultStartTime,
       defaultEndTime: user.defaultEndTime,
@@ -67,6 +68,8 @@ async function main() {
   let attendanceCount = 0
 
   for (const emp of employees) {
+    if (!emp.organizationId) continue
+
     const startTime = emp.defaultStartTime ?? "09:00:00"
     const endTime = emp.defaultEndTime ?? "17:00:00"
 
@@ -83,6 +86,7 @@ async function main() {
         const [shift] = await db
           .insert(shifts)
           .values({
+            organizationId: emp.organizationId,
             userId: emp.id,
             date: dateStr,
             startTime,
@@ -104,6 +108,7 @@ async function main() {
         clockOut.setHours(endH, endM - Math.floor(Math.random() * 10), 0, 0)   // ±0-10 min skôr
 
         await db.insert(attendance).values({
+          organizationId: emp.organizationId,
           userId: emp.id,
           shiftId: shift.id,
           clockIn,

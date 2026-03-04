@@ -37,7 +37,7 @@ export interface Employee {
   id: string
   name: string
   email: string
-  role: "admin" | "employee"
+  role: "superadmin" | "admin" | "employee"
   defaultDays: string
   color: string
   hourlyRate: number | null

@@ -56,7 +56,9 @@ export default async function ZastupPage({
   const nextMonth = `${nextDate.getFullYear()}-${pad(nextDate.getMonth() + 1)}`
   const isCurrentMonth = year === now.getFullYear() && monthNum === now.getMonth() + 1
 
-  const isAdmin = (session.user as { role?: string }).role === "admin"
+  const sessionUser = session.user as { role?: string; organizationId?: string | null }
+  const isAdmin = sessionUser.role === "admin"
+  const orgId = sessionUser.organizationId!
   const userId = session.user.id
   const requester = alias(user, "requester")
   const replacement = alias(user, "replacement")
@@ -122,7 +124,7 @@ export default async function ZastupPage({
       .innerJoin(shifts, eq(shiftReplacements.shiftId, shifts.id))
       .innerJoin(requester, eq(shiftReplacements.requestedByUserId, requester.id))
       .innerJoin(replacement, eq(shiftReplacements.replacementUserId, replacement.id))
-      .where(eq(shiftReplacements.status, "pending"))
+      .where(and(eq(shiftReplacements.organizationId, orgId), eq(shiftReplacements.status, "pending")))
       .orderBy(shiftReplacements.createdAt)
     : Promise.resolve([]),
 
@@ -148,7 +150,7 @@ export default async function ZastupPage({
     db
       .select({ id: user.id, name: user.name })
       .from(user)
-      .where(and(isNull(user.archivedAt), ne(user.id, userId)))
+      .where(and(eq(user.organizationId, orgId), isNull(user.archivedAt), ne(user.id, userId)))
       .orderBy(user.name),
   ])
 

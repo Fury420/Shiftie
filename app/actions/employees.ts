@@ -3,9 +3,9 @@
 import { auth } from "@/lib/auth"
 import { db } from "@/db"
 import { user } from "@/db/schema"
-import { eq } from "drizzle-orm"
+import { eq, and } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-import { requireAdmin } from "@/lib/auth-guard"
+import { requireAdmin, getOrganizationId } from "@/lib/auth-guard"
 
 export async function createEmployee(data: {
   name: string
@@ -17,6 +17,7 @@ export async function createEmployee(data: {
   hourlyRate?: number | null
 }) {
   await requireAdmin()
+  const orgId = await getOrganizationId()
 
   const result = await auth.api.signUpEmail({
     body: { name: data.name, email: data.email, password: data.password },
@@ -30,6 +31,7 @@ export async function createEmployee(data: {
     .update(user)
     .set({
       role: data.role,
+      organizationId: orgId,
       emailVerified: true,
       defaultDays: data.defaultDays || null,
       color: data.color || null,
@@ -46,6 +48,7 @@ export async function updateEmployee(
   data: { name: string; role: "admin" | "employee"; defaultDays: string; color: string; hourlyRate?: number | null },
 ) {
   await requireAdmin()
+  const orgId = await getOrganizationId()
 
   await db
     .update(user)
@@ -57,25 +60,27 @@ export async function updateEmployee(
       hourlyRate: data.hourlyRate != null ? String(data.hourlyRate) : null,
       updatedAt: new Date(),
     })
-    .where(eq(user.id, id))
+    .where(and(eq(user.id, id), eq(user.organizationId, orgId)))
 
   revalidatePath("/admin/employees")
 }
 
 export async function deleteEmployee(id: string) {
   const session = await requireAdmin()
+  const orgId = await getOrganizationId()
 
   if (session.user.id === id) {
     throw new Error("Nemôžeš zmazať sám seba.")
   }
 
-  await db.delete(user).where(eq(user.id, id))
+  await db.delete(user).where(and(eq(user.id, id), eq(user.organizationId, orgId)))
 
   revalidatePath("/admin/employees")
 }
 
 export async function archiveEmployee(id: string) {
   const session = await requireAdmin()
+  const orgId = await getOrganizationId()
 
   if (session.user.id === id) {
     throw new Error("Nemôžeš archivovať sám seba.")
@@ -84,18 +89,19 @@ export async function archiveEmployee(id: string) {
   await db
     .update(user)
     .set({ archivedAt: new Date(), updatedAt: new Date() })
-    .where(eq(user.id, id))
+    .where(and(eq(user.id, id), eq(user.organizationId, orgId)))
 
   revalidatePath("/admin/employees")
 }
 
 export async function unarchiveEmployee(id: string) {
   await requireAdmin()
+  const orgId = await getOrganizationId()
 
   await db
     .update(user)
     .set({ archivedAt: null, updatedAt: new Date() })
-    .where(eq(user.id, id))
+    .where(and(eq(user.id, id), eq(user.organizationId, orgId)))
 
   revalidatePath("/admin/employees")
 }

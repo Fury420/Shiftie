@@ -7,7 +7,8 @@ import { requireAdmin } from "@/lib/auth-guard"
 import { AdminLeavesTable, type AdminLeaveRow } from "@/components/leaves/admin-leaves-table"
 
 export default async function AdminLeavesPage() {
-  await requireAdmin()
+  const session = await requireAdmin()
+  const orgId = (session.user as { organizationId?: string | null }).organizationId!
 
   const records = await db
     .select({
@@ -22,6 +23,7 @@ export default async function AdminLeavesPage() {
     })
     .from(leaves)
     .leftJoin(user, eq(leaves.userId, user.id))
+    .where(eq(leaves.organizationId, orgId))
     .orderBy(
       // pending first, then by creation date desc
       sql`CASE WHEN ${leaves.status} = 'pending' THEN 0 ELSE 1 END`,

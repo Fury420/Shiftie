@@ -5,7 +5,7 @@ import { leaves } from "@/db/schema"
 import { eq, and } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { getSession } from "@/lib/session"
-import { requireAdmin } from "@/lib/auth-guard"
+import { requireAdmin, getOrganizationId } from "@/lib/auth-guard"
 
 export async function requestLeave(data: {
   type: "vacation" | "sick" | "personal"
@@ -15,8 +15,10 @@ export async function requestLeave(data: {
 }) {
   const session = await getSession()
   if (!session) throw new Error("Nie ste prihlásený.")
+  const orgId = await getOrganizationId()
 
   await db.insert(leaves).values({
+    organizationId: orgId,
     userId: session.user.id,
     type: data.type,
     startDate: data.startDate,
@@ -79,11 +81,12 @@ export async function adminUpdateLeave(
   data: { type: "vacation" | "sick" | "personal"; startDate: string; endDate: string; note?: string },
 ) {
   await requireAdmin()
+  const orgId = await getOrganizationId()
 
   await db
     .update(leaves)
     .set({ type: data.type, startDate: data.startDate, endDate: data.endDate, note: data.note || null, updatedAt: new Date() })
-    .where(eq(leaves.id, id))
+    .where(and(eq(leaves.id, id), eq(leaves.organizationId, orgId)))
 
   revalidatePath("/leaves")
   revalidatePath("/admin/leaves")
@@ -91,11 +94,12 @@ export async function adminUpdateLeave(
 
 export async function adminUpdateLeaveStatus(id: string, status: "approved" | "rejected") {
   await requireAdmin()
+  const orgId = await getOrganizationId()
 
   await db
     .update(leaves)
     .set({ status, updatedAt: new Date() })
-    .where(eq(leaves.id, id))
+    .where(and(eq(leaves.id, id), eq(leaves.organizationId, orgId)))
 
   revalidatePath("/leaves")
   revalidatePath("/admin/leaves")
@@ -105,7 +109,10 @@ export async function adminUpdateLeaveStatus(id: string, status: "approved" | "r
 
 export async function adminDeleteLeave(id: string) {
   await requireAdmin()
-  await db.delete(leaves).where(eq(leaves.id, id))
+  const orgId = await getOrganizationId()
+
+  await db.delete(leaves).where(and(eq(leaves.id, id), eq(leaves.organizationId, orgId)))
+
   revalidatePath("/leaves")
   revalidatePath("/admin/leaves")
 }

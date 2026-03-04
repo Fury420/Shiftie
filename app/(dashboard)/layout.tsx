@@ -6,7 +6,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { UserMenu } from "@/components/user-menu"
 import { getSession } from "@/lib/session"
 import { db } from "@/db"
-import { shiftReplacements } from "@/db/schema"
+import { shiftReplacements, organizations } from "@/db/schema"
 import { eq, and } from "drizzle-orm"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -16,16 +16,32 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/login")
   }
 
-  const sessionUser = session.user as { role?: string; color?: string | null; mustChangePassword?: boolean }
+  const sessionUser = session.user as { role?: string; color?: string | null; mustChangePassword?: boolean; organizationId?: string | null }
 
   if (sessionUser.mustChangePassword) {
     redirect("/set-password")
   }
+
+  if (sessionUser.role === "superadmin") {
+    redirect("/superadmin")
+  }
+
+  let organizationName: string | null = null
+  if (sessionUser.organizationId) {
+    const [org] = await db
+      .select({ name: organizations.name })
+      .from(organizations)
+      .where(eq(organizations.id, sessionUser.organizationId))
+      .limit(1)
+    organizationName = org?.name ?? null
+  }
+
   const user = {
     name: session.user.name,
     email: session.user.email,
     role: sessionUser.role ?? "employee",
     color: sessionUser.color ?? null,
+    organizationName,
   }
 
   const pendingReplacements = await db

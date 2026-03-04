@@ -2,12 +2,13 @@ export const dynamic = "force-dynamic"
 
 import { db } from "@/db"
 import { user } from "@/db/schema"
-import { asc } from "drizzle-orm"
+import { asc, eq } from "drizzle-orm"
 import { requireAdmin } from "@/lib/auth-guard"
 import { EmployeesTable } from "@/components/employees/employees-table"
 
 export default async function AdminEmployeesPage() {
   const session = await requireAdmin()
+  const orgId = (session.user as { organizationId?: string | null }).organizationId!
 
   const employees = await db
     .select({
@@ -22,6 +23,7 @@ export default async function AdminEmployeesPage() {
       createdAt: user.createdAt,
     })
     .from(user)
+    .where(eq(user.organizationId, orgId))
     .orderBy(asc(user.createdAt))
 
   const formatted = employees.map((e) => ({

@@ -16,7 +16,9 @@ export default async function SchedulePage({
   const session = await getSession()
   if (!session) redirect("/login")
 
-  const isAdmin = (session.user as { role?: string }).role === "admin"
+  const sessionUser = session.user as { role?: string; organizationId?: string | null }
+  const isAdmin = sessionUser.role === "admin"
+  const orgId = sessionUser.organizationId!
 
   const { month } = await searchParams
   const { year, monthNum, weeks } = getMonthGrid(month)
@@ -38,6 +40,7 @@ export default async function SchedulePage({
       .from(shifts)
       .where(
         and(
+          eq(shifts.organizationId, orgId),
           eq(shifts.status, "published"),
           gte(shifts.date, startDate),
           lte(shifts.date, endDate),
@@ -48,12 +51,13 @@ export default async function SchedulePage({
     db
       .select({ id: user.id, name: user.name, color: user.color })
       .from(user)
+      .where(eq(user.organizationId, orgId))
       .orderBy(asc(user.name)),
 
     db
       .select({ userId: leaves.userId, startDate: leaves.startDate, endDate: leaves.endDate })
       .from(leaves)
-      .where(and(eq(leaves.status, "approved"), lte(leaves.startDate, endDate), gte(leaves.endDate, startDate))),
+      .where(and(eq(leaves.organizationId, orgId), eq(leaves.status, "approved"), lte(leaves.startDate, endDate), gte(leaves.endDate, startDate))),
   ])
 
   const onLeave = (userId: string, date: string) =>
