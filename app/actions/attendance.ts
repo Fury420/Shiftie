@@ -78,18 +78,18 @@ export async function updateOwnAttendance(
 
   await db
     .update(attendance)
-    .set({ clockIn: toUTC(newClockIn), clockOut: toUTC(newClockOut), note: note || null })
+    .set({ clockIn: toUTC(newClockIn), clockOut: toUTC(newClockOut), note: note || null, editedAt: new Date(), editedBy: session.user.id })
     .where(eq(attendance.id, id))
 
   revalidatePath("/attendance")
 }
 
 export async function adminUpdateAttendance(id: string, clockIn: string, clockOut: string) {
-  await requireAdmin()
+  const session = await requireAdmin()
 
   await db
     .update(attendance)
-    .set({ clockIn: new Date(clockIn), clockOut: new Date(clockOut) })
+    .set({ clockIn: new Date(clockIn), clockOut: new Date(clockOut), editedAt: new Date(), editedBy: session.user.id })
     .where(eq(attendance.id, id))
 
   revalidatePath("/admin/reports")

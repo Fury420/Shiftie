@@ -48,27 +48,28 @@ export async function respondToReplacement(id: string, response: "accepted" | "r
   const session = await getSession()
   if (!session) throw new Error("Neprihlásený")
 
-  const [replacement] = await db
-    .select()
-    .from(shiftReplacements)
-    .where(eq(shiftReplacements.id, id))
-    .limit(1)
+  await db.transaction(async (tx) => {
+    const [replacement] = await tx
+      .select()
+      .from(shiftReplacements)
+      .where(and(eq(shiftReplacements.id, id), eq(shiftReplacements.status, "pending")))
+      .limit(1)
 
-  if (!replacement) throw new Error("Žiadosť neexistuje")
-  if (replacement.replacementUserId !== session.user.id) throw new Error("Nemáš oprávnenie")
-  if (replacement.status !== "pending") throw new Error("Žiadosť už bola vybavená")
+    if (!replacement) throw new Error("Žiadosť už bola vybavená")
+    if (replacement.replacementUserId !== session.user.id) throw new Error("Nemáš oprávnenie")
 
-  if (response === "accepted") {
-    await db
-      .update(shifts)
-      .set({ userId: replacement.replacementUserId, updatedAt: new Date() })
-      .where(eq(shifts.id, replacement.shiftId))
-  }
+    if (response === "accepted") {
+      await tx
+        .update(shifts)
+        .set({ userId: replacement.replacementUserId, updatedAt: new Date() })
+        .where(eq(shifts.id, replacement.shiftId))
+    }
 
-  await db
-    .update(shiftReplacements)
-    .set({ status: response, updatedAt: new Date() })
-    .where(eq(shiftReplacements.id, id))
+    await tx
+      .update(shiftReplacements)
+      .set({ status: response, updatedAt: new Date() })
+      .where(eq(shiftReplacements.id, id))
+  })
 
   revalidatePath("/replacements")
   revalidatePath("/schedule")
@@ -77,26 +78,27 @@ export async function respondToReplacement(id: string, response: "accepted" | "r
 export async function adminResolveReplacement(id: string, response: "accepted" | "rejected") {
   await requireAdmin()
 
-  const [replacement] = await db
-    .select()
-    .from(shiftReplacements)
-    .where(eq(shiftReplacements.id, id))
-    .limit(1)
+  await db.transaction(async (tx) => {
+    const [replacement] = await tx
+      .select()
+      .from(shiftReplacements)
+      .where(and(eq(shiftReplacements.id, id), eq(shiftReplacements.status, "pending")))
+      .limit(1)
 
-  if (!replacement) throw new Error("Žiadosť neexistuje")
-  if (replacement.status !== "pending") throw new Error("Žiadosť už bola vybavená")
+    if (!replacement) throw new Error("Žiadosť už bola vybavená")
 
-  if (response === "accepted") {
-    await db
-      .update(shifts)
-      .set({ userId: replacement.replacementUserId, updatedAt: new Date() })
-      .where(eq(shifts.id, replacement.shiftId))
-  }
+    if (response === "accepted") {
+      await tx
+        .update(shifts)
+        .set({ userId: replacement.replacementUserId, updatedAt: new Date() })
+        .where(eq(shifts.id, replacement.shiftId))
+    }
 
-  await db
-    .update(shiftReplacements)
-    .set({ status: response, updatedAt: new Date() })
-    .where(eq(shiftReplacements.id, id))
+    await tx
+      .update(shiftReplacements)
+      .set({ status: response, updatedAt: new Date() })
+      .where(eq(shiftReplacements.id, id))
+  })
 
   revalidatePath("/admin/replacements")
   revalidatePath("/replacements")

@@ -93,6 +93,8 @@ export const attendance = pgTable("attendance", {
   clockIn: timestamp("clock_in").notNull(),
   clockOut: timestamp("clock_out"),
   note: text("note"),
+  editedAt: timestamp("edited_at"),
+  editedBy: text("edited_by").references(() => user.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 })
 
