@@ -1,13 +1,14 @@
 export const dynamic = "force-dynamic"
 
 import { db } from "@/db"
-import { attendance, user } from "@/db/schema"
-import { eq, and, gte, lt, isNotNull, asc } from "drizzle-orm"
+import { attendance, shifts, user } from "@/db/schema"
+import { eq, and, gte, lt, lte, isNotNull, asc } from "drizzle-orm"
 import { requireAdmin } from "@/lib/auth-guard"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { WagesTable } from "@/components/wages/wages-table"
+import { PlannedWagesTable } from "@/components/wages/planned-wages-table"
 
 const TZ = "Europe/Bratislava"
 
@@ -26,7 +27,8 @@ export default async function AdminWagesPage({
 }: {
   searchParams: Promise<{ month?: string }>
 }) {
-  await requireAdmin()
+  const session = await requireAdmin()
+  const orgId = (session.user as { organizationId?: string | null }).organizationId!
 
   const { month } = await searchParams
   const now = new Date()
@@ -41,7 +43,17 @@ export default async function AdminWagesPage({
 
   const { start, end } = monthBounds(year, monthNum)
 
-  const records = await db
+  const pad2 = (n: number) => String(n).padStart(2, "0")
+  const firstOfMonth = `${year}-${pad2(monthNum)}-01`
+  const lastOfMonth = `${year}-${pad2(monthNum)}-${pad2(new Date(year, monthNum, 0).getDate())}`
+
+  function timeToMinutes(t: string): number {
+    const [h, m] = t.split(":").map(Number)
+    return h * 60 + m
+  }
+
+  const [records, monthShifts] = await Promise.all([
+    db
     .select({
       userId: attendance.userId,
       userName: user.name,
@@ -54,12 +66,35 @@ export default async function AdminWagesPage({
     .leftJoin(user, eq(attendance.userId, user.id))
     .where(
       and(
+        eq(attendance.organizationId, orgId),
         isNotNull(attendance.clockOut),
         gte(attendance.clockIn, start),
         lt(attendance.clockIn, end),
       ),
     )
-    .orderBy(asc(user.name), asc(attendance.clockIn))
+    .orderBy(asc(user.name), asc(attendance.clockIn)),
+
+    db
+      .select({
+        userId: shifts.userId,
+        userName: user.name,
+        userColor: user.color,
+        userHourlyRate: user.hourlyRate,
+        startTime: shifts.startTime,
+        endTime: shifts.endTime,
+      })
+      .from(shifts)
+      .leftJoin(user, eq(shifts.userId, user.id))
+      .where(
+        and(
+          eq(shifts.organizationId, orgId),
+          eq(shifts.status, "published"),
+          gte(shifts.date, firstOfMonth),
+          lte(shifts.date, lastOfMonth),
+        ),
+      )
+      .orderBy(asc(user.name)),
+  ])
 
   const wagesMap = new Map<string, { name: string; color: string | null; hourlyRate: number | null; totalMinutes: number }>()
 
@@ -80,6 +115,27 @@ export default async function AdminWagesPage({
   }
 
   const rows = Array.from(wagesMap.entries()).map(([userId, v]) => ({ userId, ...v }))
+
+  const plannedMap = new Map<string, { name: string; color: string | null; hourlyRate: number | null; totalMinutes: number }>()
+
+  for (const s of monthShifts) {
+    if (!s.userId || !s.startTime || !s.endTime) continue
+    const minutes = timeToMinutes(s.endTime) - timeToMinutes(s.startTime)
+    if (minutes <= 0) continue
+    const rate = s.userHourlyRate != null ? parseFloat(s.userHourlyRate) : null
+
+    if (!plannedMap.has(s.userId)) {
+      plannedMap.set(s.userId, {
+        name: s.userName ?? "—",
+        color: s.userColor ?? null,
+        hourlyRate: rate,
+        totalMinutes: 0,
+      })
+    }
+    plannedMap.get(s.userId)!.totalMinutes += minutes
+  }
+
+  const plannedRows = Array.from(plannedMap.entries()).map(([userId, v]) => ({ userId, ...v }))
 
   const pad = (n: number) => String(n).padStart(2, "0")
   const prevDate = new Date(year, monthNum - 2)
@@ -110,7 +166,15 @@ export default async function AdminWagesPage({
         </div>
       </div>
 
-      <WagesTable rows={rows} />
+      <div className="flex flex-col gap-2">
+        <h2 className="text-base font-semibold text-muted-foreground">Plánované mzdy (odhad)</h2>
+        <PlannedWagesTable rows={plannedRows} />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <h2 className="text-base font-semibold text-muted-foreground">Skutočné mzdy</h2>
+        <WagesTable rows={rows} />
+      </div>
     </div>
   )
 }
