@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Clock, Calendar, Users, CalendarCog, BarChart3, ArrowLeftRight } from "lucide-react"
@@ -40,7 +41,7 @@ export function AppSidebar({ user, pendingReplacementCount }: AppSidebarProps) {
   return (
     <Sidebar collapsible="offcanvas">
       <SidebarHeader className="px-4 py-4">
-        <span className="text-lg font-semibold tracking-tight">Shiftie</span>
+        <Image src="/logo.png" alt="Shiftie" width={120} height={32} className="object-contain" />
       </SidebarHeader>
 
       <SidebarContent>
