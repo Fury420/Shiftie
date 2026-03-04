@@ -42,7 +42,7 @@ export function AppSidebar({ user, pendingReplacementCount }: AppSidebarProps) {
   return (
     <Sidebar collapsible="offcanvas">
       <SidebarHeader className="px-4 py-4">
-        <Image src="/logo.png" alt="Shiftie" width={120} height={32} className="object-contain" />
+        <Image src="/logo.png" alt="Shiftie" width={160} height={44} className="object-contain" />
       </SidebarHeader>
 
       <SidebarContent>

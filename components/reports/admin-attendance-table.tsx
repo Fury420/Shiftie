@@ -59,6 +59,7 @@ export interface AdminAttendanceRow {
   clockInISO: string
   clockOutISO: string
   minutes: number
+  note: string | null
 }
 
 interface EditState {
@@ -134,7 +135,12 @@ export function AdminAttendanceTable({ rows, grandTotal }: Props) {
                 key={row.id}
                 style={{ backgroundColor: row.color ? `${row.color}18` : undefined }}
               >
-                <TableCell>{row.date}</TableCell>
+                <TableCell>
+                  <div>{row.date}</div>
+                  {row.note && (
+                    <div className="text-xs text-muted-foreground mt-0.5 italic">{row.note}</div>
+                  )}
+                </TableCell>
                 <TableCell>{row.clockIn}</TableCell>
                 <TableCell>{row.clockOut}</TableCell>
                 <TableCell className="text-right font-mono text-sm">

@@ -95,7 +95,7 @@ export default async function AdminReportsPage({
       clockInISO: r.clockIn.toISOString(),
       clockOutISO: r.clockOut.toISOString(),
       minutes,
-      note: null,
+      note: r.note ?? null,
     })
 
     if (!pieMap.has(r.userId)) {
