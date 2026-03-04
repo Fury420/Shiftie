@@ -3,7 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Clock, Calendar, Users, CalendarCog, BarChart3, ArrowLeftRight, Banknote, Umbrella } from "lucide-react"
+import { Clock, Calendar, Users, CalendarCog, BarChart3, Banknote, Umbrella } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -20,8 +20,7 @@ import {
 const employeeNav = [
   { href: "/attendance", label: "Dochádzka", icon: Clock },
   { href: "/schedule", label: "Plán zmien", icon: Calendar },
-  { href: "/replacements", label: "Zastup", icon: ArrowLeftRight },
-  { href: "/leaves", label: "Dovolenky", icon: Umbrella },
+  { href: "/replacements", label: "Voľno & zastup", icon: Umbrella },
 ]
 
 const adminNav = [
@@ -44,7 +43,9 @@ export function AppSidebar({ user, pendingReplacementCount }: AppSidebarProps) {
   return (
     <Sidebar collapsible="offcanvas">
       <SidebarHeader className="px-4 py-4 flex items-center justify-center">
-        <Image src="/logo.png" alt="Shiftie" width={160} height={44} className="object-contain" unoptimized />
+        <Link href="/" onClick={() => setOpenMobile(false)}>
+          <Image src="/logo.png" alt="Shiftie" width={160} height={44} className="object-contain" unoptimized />
+        </Link>
       </SidebarHeader>
 
       <SidebarContent>

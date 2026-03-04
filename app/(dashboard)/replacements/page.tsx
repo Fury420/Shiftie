@@ -1,14 +1,12 @@
 export const dynamic = "force-dynamic"
 
 import { db } from "@/db"
-import { shiftReplacements, shifts, user } from "@/db/schema"
+import { shiftReplacements, shifts, user, leaves } from "@/db/schema"
 import { getSession } from "@/lib/session"
-import { eq, and, gte, lt } from "drizzle-orm"
+import { eq, and, gte, lt, desc } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
-import { MyRequestsTable } from "@/components/shift-replacement/my-requests-table"
-import { IncomingRequestsTable } from "@/components/shift-replacement/incoming-requests-table"
-import { AdminReplacementsTable } from "@/components/shift-replacement/admin-replacements-table"
 import { shortTime } from "@/lib/week"
+import { CombinedClient } from "./combined-client"
 
 function formatShiftDate(dateStr: string) {
   const [y, m, d] = dateStr.split("-").map(Number)
@@ -61,8 +59,7 @@ export default async function ZastupPage({
   const requester = alias(user, "requester")
   const replacement = alias(user, "replacement")
 
-  const [myRequests, incomingRequests, allPendingRequests] = await Promise.all([
-    // Moje odoslané žiadosti — filtrované podľa mesiaca
+  const [myRequests, incomingRequests, allPendingRequests, leavesData] = await Promise.all([
     db
       .select({
         id: shiftReplacements.id,
@@ -85,7 +82,6 @@ export default async function ZastupPage({
       )
       .orderBy(shifts.date),
 
-    // Žiadosti kde som navrhnutý (len pre zamestnanca)
     isAdmin ? Promise.resolve([]) : db
       .select({
         id: shiftReplacements.id,
@@ -106,7 +102,6 @@ export default async function ZastupPage({
       )
       .orderBy(shiftReplacements.createdAt),
 
-    // Všetky pending žiadosti (len pre admina)
     isAdmin ? db
       .select({
         id: shiftReplacements.id,
@@ -126,6 +121,19 @@ export default async function ZastupPage({
       .where(eq(shiftReplacements.status, "pending"))
       .orderBy(shiftReplacements.createdAt)
     : Promise.resolve([]),
+
+    db
+      .select({
+        id: leaves.id,
+        type: leaves.type,
+        startDate: leaves.startDate,
+        endDate: leaves.endDate,
+        status: leaves.status,
+        note: leaves.note,
+      })
+      .from(leaves)
+      .where(eq(leaves.userId, userId))
+      .orderBy(desc(leaves.createdAt)),
   ])
 
   const myFormatted = myRequests.map((r) => ({
@@ -159,39 +167,16 @@ export default async function ZastupPage({
   }))
 
   return (
-    <div className="flex flex-col gap-8 max-w-4xl">
-      <h1 className="text-2xl font-semibold">Zastup zmien</h1>
-
-      <section className="flex flex-col gap-3">
-        {isAdmin ? (
-          <>
-            <h2 className="text-lg font-medium">Čakajúce žiadosti</h2>
-            <p className="text-sm text-muted-foreground -mt-1">
-              Všetky žiadosti o zastup čakajúce na vybavenie.
-            </p>
-            <AdminReplacementsTable requests={allPendingFormatted} />
-          </>
-        ) : (
-          <>
-            <h2 className="text-lg font-medium">Žiadosti o mňa</h2>
-            <p className="text-sm text-muted-foreground -mt-1">
-              Kolegovia ťa navrhli ako náhradníka na tieto zmeny.
-            </p>
-            <IncomingRequestsTable requests={incomingFormatted} />
-          </>
-        )}
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Moje žiadosti</h2>
-        <MyRequestsTable
-          requests={myFormatted}
-          monthLabel={monthLabel}
-          prevMonth={prevMonth}
-          nextMonth={nextMonth}
-          isCurrentMonth={isCurrentMonth}
-        />
-      </section>
-    </div>
+    <CombinedClient
+      leaves={leavesData}
+      isAdmin={isAdmin}
+      myRequests={myFormatted}
+      incomingRequests={incomingFormatted}
+      allPendingRequests={allPendingFormatted}
+      monthLabel={monthLabel}
+      prevMonth={prevMonth}
+      nextMonth={nextMonth}
+      isCurrentMonth={isCurrentMonth}
+    />
   )
 }
