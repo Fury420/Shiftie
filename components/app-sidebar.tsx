@@ -41,7 +41,7 @@ export function AppSidebar({ user, pendingReplacementCount }: AppSidebarProps) {
 
   return (
     <Sidebar collapsible="offcanvas">
-      <SidebarHeader className="px-4 py-4">
+      <SidebarHeader className="px-4 py-4 flex items-center justify-center">
         <Image src="/logo.png" alt="Shiftie" width={160} height={44} className="object-contain" />
       </SidebarHeader>
 
