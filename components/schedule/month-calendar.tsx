@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, ArrowLeftRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, ArrowLeftRight, Umbrella } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { RequestDialog, type ColleagueOption } from "@/components/shift-replacement/request-dialog"
+import { LeaveRequestDialog } from "@/components/leaves/leave-request-dialog"
 
 export interface CalendarShift {
   id: string
@@ -44,6 +45,7 @@ const DAY_LABELS = ["Po", "Ut", "St", "Št", "Pi", "So", "Ne"]
 
 export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmployees }: MonthCalendarProps) {
   const [dialogShift, setDialogShift] = useState<CalendarShift & { dateLabel: string } | null>(null)
+  const [leaveDate, setLeaveDate] = useState<string | null>(null)
 
   return (
     <div className="flex flex-col gap-4">
@@ -79,18 +81,28 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
                 !day.isToday && day.shifts.length === 0 && "opacity-50",
               )}
             >
-              <div className="flex items-center gap-2">
-                <div
-                  className={cn(
-                    "size-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
-                    day.isToday ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-                  )}
-                >
-                  {dateObj.getDate()}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={cn(
+                      "size-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
+                      day.isToday ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {dateObj.getDate()}
+                  </div>
+                  <span className={cn("text-sm font-medium capitalize", !day.isCurrentMonth && "text-muted-foreground")}>
+                    {dayLabel}
+                  </span>
                 </div>
-                <span className={cn("text-sm font-medium capitalize", !day.isCurrentMonth && "text-muted-foreground")}>
-                  {dayLabel}
-                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-7 text-muted-foreground shrink-0"
+                  onClick={() => setLeaveDate(day.date)}
+                >
+                  <Umbrella className="size-3.5" />
+                </Button>
               </div>
 
               {day.shifts.length === 0 ? (
@@ -170,17 +182,27 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
                     day.isToday && "bg-primary/5",
                   )}
                 >
-                  <div
-                    className={cn(
-                      "text-xs font-medium mb-0.5 w-5 h-5 flex items-center justify-center rounded-full",
-                      day.isToday
-                        ? "bg-primary text-primary-foreground"
-                        : day.isCurrentMonth
-                        ? "text-foreground"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    {dayNum}
+                  <div className="flex items-center justify-between mb-0.5 group/day">
+                    <div
+                      className={cn(
+                        "text-xs font-medium w-5 h-5 flex items-center justify-center rounded-full",
+                        day.isToday
+                          ? "bg-primary text-primary-foreground"
+                          : day.isCurrentMonth
+                          ? "text-foreground"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {dayNum}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-4 opacity-0 group-hover/day:opacity-100 transition-opacity text-muted-foreground p-0"
+                      onClick={() => setLeaveDate(day.date)}
+                    >
+                      <Umbrella className="size-3" />
+                    </Button>
                   </div>
 
                   <div className="flex flex-col gap-0.5">
@@ -246,6 +268,12 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
           colleagues={allEmployees.filter((e) => e.id !== dialogShift.userId)}
         />
       )}
+
+      <LeaveRequestDialog
+        open={!!leaveDate}
+        onOpenChange={(open) => { if (!open) setLeaveDate(null) }}
+        defaultDate={leaveDate ?? undefined}
+      />
     </div>
   )
 }

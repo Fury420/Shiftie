@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useEffect, useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -19,20 +19,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { requestLeave } from "@/app/actions/leaves"
+import { requestLeave, updateLeave } from "@/app/actions/leaves"
+
+export interface LeaveForEdit {
+  id: string
+  type: "vacation" | "sick" | "personal"
+  startDate: string
+  endDate: string
+  note: string | null
+}
 
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
+  leave?: LeaveForEdit
+  defaultDate?: string
 }
 
-export function LeaveRequestDialog({ open, onOpenChange }: Props) {
+export function LeaveRequestDialog({ open, onOpenChange, leave, defaultDate }: Props) {
+  const isEdit = !!leave
   const [type, setType] = useState<"vacation" | "sick" | "personal">("vacation")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
   const [note, setNote] = useState("")
   const [error, setError] = useState("")
   const [isPending, startTransition] = useTransition()
+
+  useEffect(() => {
+    if (open) {
+      setType(leave?.type ?? "vacation")
+      setStartDate(leave?.startDate ?? defaultDate ?? "")
+      setEndDate(leave?.endDate ?? defaultDate ?? "")
+      setNote(leave?.note ?? "")
+      setError("")
+    }
+  }, [open, leave, defaultDate])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -49,11 +70,12 @@ export function LeaveRequestDialog({ open, onOpenChange }: Props) {
 
     startTransition(async () => {
       try {
-        await requestLeave({ type, startDate, endDate, note })
+        if (isEdit) {
+          await updateLeave(leave.id, { type, startDate, endDate, note })
+        } else {
+          await requestLeave({ type, startDate, endDate, note })
+        }
         onOpenChange(false)
-        setNote("")
-        setStartDate("")
-        setEndDate("")
       } catch (err) {
         setError(err instanceof Error ? err.message : "Nastala chyba")
       }
@@ -64,7 +86,7 @@ export function LeaveRequestDialog({ open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Nová žiadosť o voľno</DialogTitle>
+          <DialogTitle>{isEdit ? "Upraviť žiadosť" : "Nová žiadosť o voľno"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -122,7 +144,7 @@ export function LeaveRequestDialog({ open, onOpenChange }: Props) {
               Zrušiť
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isPending ? "Odosielam…" : "Odoslať žiadosť"}
+              {isPending ? (isEdit ? "Ukladám…" : "Odosielam…") : isEdit ? "Uložiť" : "Odoslať žiadosť"}
             </Button>
           </DialogFooter>
         </form>

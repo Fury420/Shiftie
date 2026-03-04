@@ -1,8 +1,8 @@
 "use client"
 
-import { useTransition } from "react"
+import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { X } from "lucide-react"
+import { X, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cancelLeave } from "@/app/actions/leaves"
+import { LeaveRequestDialog, type LeaveForEdit } from "@/components/leaves/leave-request-dialog"
 
 const TYPE_LABELS: Record<string, string> = {
   vacation: "Dovolenka",
@@ -43,6 +44,7 @@ function StatusBadge({ status }: { status: string }) {
 export function EmployeeLeavesTable({ rows }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const [editLeave, setEditLeave] = useState<LeaveForEdit | null>(null)
 
   function handleCancel(id: string) {
     startTransition(async () => {
@@ -56,43 +58,68 @@ export function EmployeeLeavesTable({ rows }: Props) {
   }
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Typ</TableHead>
-            <TableHead>Od</TableHead>
-            <TableHead>Do</TableHead>
-            <TableHead>Stav</TableHead>
-            <TableHead>Poznámka</TableHead>
-            <TableHead />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((row) => (
-            <TableRow key={row.id}>
-              <TableCell className="font-medium">{TYPE_LABELS[row.type] ?? row.type}</TableCell>
-              <TableCell>{row.startDate}</TableCell>
-              <TableCell>{row.endDate}</TableCell>
-              <TableCell><StatusBadge status={row.status} /></TableCell>
-              <TableCell className="text-sm text-muted-foreground">{row.note ?? "—"}</TableCell>
-              <TableCell>
-                {row.status === "pending" && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-7 text-destructive hover:text-destructive"
-                    disabled={isPending}
-                    onClick={() => handleCancel(row.id)}
-                  >
-                    <X className="size-3.5" />
-                  </Button>
-                )}
-              </TableCell>
+    <>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Typ</TableHead>
+              <TableHead>Od</TableHead>
+              <TableHead>Do</TableHead>
+              <TableHead>Stav</TableHead>
+              <TableHead>Poznámka</TableHead>
+              <TableHead />
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow key={row.id}>
+                <TableCell className="font-medium">{TYPE_LABELS[row.type] ?? row.type}</TableCell>
+                <TableCell>{row.startDate}</TableCell>
+                <TableCell>{row.endDate}</TableCell>
+                <TableCell><StatusBadge status={row.status} /></TableCell>
+                <TableCell className="text-sm text-muted-foreground">{row.note ?? "—"}</TableCell>
+                <TableCell>
+                  {row.status === "pending" && (
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7"
+                        disabled={isPending}
+                        onClick={() => setEditLeave({
+                          id: row.id,
+                          type: row.type as LeaveForEdit["type"],
+                          startDate: row.startDate,
+                          endDate: row.endDate,
+                          note: row.note,
+                        })}
+                      >
+                        <Pencil className="size-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7 text-destructive hover:text-destructive"
+                        disabled={isPending}
+                        onClick={() => handleCancel(row.id)}
+                      >
+                        <X className="size-3.5" />
+                      </Button>
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <LeaveRequestDialog
+        open={!!editLeave}
+        onOpenChange={(o) => { if (!o) setEditLeave(null) }}
+        leave={editLeave ?? undefined}
+      />
+    </>
   )
 }

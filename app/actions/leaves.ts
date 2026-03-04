@@ -49,6 +49,46 @@ export async function cancelLeave(id: string) {
   revalidatePath("/admin/leaves")
 }
 
+export async function updateLeave(
+  id: string,
+  data: { type: "vacation" | "sick" | "personal"; startDate: string; endDate: string; note?: string },
+) {
+  const session = await getSession()
+  if (!session) throw new Error("Nie ste prihlásený.")
+
+  const [leave] = await db
+    .select({ userId: leaves.userId, status: leaves.status })
+    .from(leaves)
+    .where(eq(leaves.id, id))
+    .limit(1)
+
+  if (!leave || leave.userId !== session.user.id) throw new Error("Nemáte oprávnenie.")
+  if (leave.status !== "pending") throw new Error("Nie je možné upraviť schválenú alebo zamietnutú žiadosť.")
+
+  await db
+    .update(leaves)
+    .set({ type: data.type, startDate: data.startDate, endDate: data.endDate, note: data.note || null, updatedAt: new Date() })
+    .where(and(eq(leaves.id, id), eq(leaves.userId, session.user.id)))
+
+  revalidatePath("/leaves")
+  revalidatePath("/admin/leaves")
+}
+
+export async function adminUpdateLeave(
+  id: string,
+  data: { type: "vacation" | "sick" | "personal"; startDate: string; endDate: string; note?: string },
+) {
+  await requireAdmin()
+
+  await db
+    .update(leaves)
+    .set({ type: data.type, startDate: data.startDate, endDate: data.endDate, note: data.note || null, updatedAt: new Date() })
+    .where(eq(leaves.id, id))
+
+  revalidatePath("/leaves")
+  revalidatePath("/admin/leaves")
+}
+
 export async function adminUpdateLeaveStatus(id: string, status: "approved" | "rejected") {
   await requireAdmin()
 
@@ -57,6 +97,13 @@ export async function adminUpdateLeaveStatus(id: string, status: "approved" | "r
     .set({ status, updatedAt: new Date() })
     .where(eq(leaves.id, id))
 
+  revalidatePath("/leaves")
+  revalidatePath("/admin/leaves")
+}
+
+export async function adminDeleteLeave(id: string) {
+  await requireAdmin()
+  await db.delete(leaves).where(eq(leaves.id, id))
   revalidatePath("/leaves")
   revalidatePath("/admin/leaves")
 }
