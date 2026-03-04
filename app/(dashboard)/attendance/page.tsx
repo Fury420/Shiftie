@@ -100,6 +100,7 @@ export default async function AttendancePage({
       clockIn: formatTime(r.clockIn),
       clockOut: r.clockOut ? formatTime(r.clockOut) : null,
       duration: r.clockOut ? formatDuration(roundTo15(r.clockOut.getTime() - r.clockIn.getTime())) : null,
+      note: r.note ?? null,
       isOpen: !r.clockOut,
       isWeekend: dow === "Sat" || dow === "Sun",
     }

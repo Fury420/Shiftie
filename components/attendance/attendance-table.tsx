@@ -23,6 +23,7 @@ export interface AttendanceRecord {
   clockIn: string
   clockOut: string | null
   duration: string | null
+  note: string | null
   isOpen: boolean
   isWeekend: boolean
 }
@@ -121,21 +122,26 @@ export function AttendanceTable({
                 <TableRow key={r.id} className={r.isWeekend ? "bg-muted/40" : undefined}>
                   <TableCell className="font-medium">{r.date}</TableCell>
                   <TableCell>
-                    {r.isOpen ? (
-                      <span className="flex items-center gap-1.5">
-                        {r.clockIn}
-                        <span className="text-muted-foreground">–</span>
-                        <Badge variant="secondary" className="text-green-600 bg-green-50">
-                          Pracuje
-                        </Badge>
-                      </span>
-                    ) : (
-                      <span className="tabular-nums">
-                        {r.clockIn}
-                        <span className="text-muted-foreground mx-1.5">–</span>
-                        {r.clockOut}
-                      </span>
-                    )}
+                    <div className="flex flex-col gap-0.5">
+                      {r.isOpen ? (
+                        <span className="flex items-center gap-1.5">
+                          {r.clockIn}
+                          <span className="text-muted-foreground">–</span>
+                          <Badge variant="secondary" className="text-green-600 bg-green-50">
+                            Pracuje
+                          </Badge>
+                        </span>
+                      ) : (
+                        <span className="tabular-nums">
+                          {r.clockIn}
+                          <span className="text-muted-foreground mx-1.5">–</span>
+                          {r.clockOut}
+                        </span>
+                      )}
+                      {r.note && (
+                        <span className="text-xs text-muted-foreground">{r.note}</span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right font-mono text-sm">{r.duration ?? "—"}</TableCell>
                   <TableCell className="text-right">
@@ -145,6 +151,7 @@ export function AttendanceTable({
                         dateStr={r.dateStr}
                         clockIn={r.clockIn}
                         clockOut={r.clockOut!}
+                        note={r.note}
                       />
                     )}
                   </TableCell>

@@ -51,7 +51,8 @@ export async function updateOwnAttendance(
   id: string,
   dateStr: string,    // YYYY-MM-DD in Europe/Bratislava
   newClockIn: string, // HH:MM
-  newClockOut: string // HH:MM
+  newClockOut: string, // HH:MM
+  note: string | null
 ) {
   const session = await getSession()
   if (!session) throw new Error("Neprihlásený")
@@ -77,7 +78,7 @@ export async function updateOwnAttendance(
 
   await db
     .update(attendance)
-    .set({ clockIn: toUTC(newClockIn), clockOut: toUTC(newClockOut) })
+    .set({ clockIn: toUTC(newClockIn), clockOut: toUTC(newClockOut), note: note || null })
     .where(eq(attendance.id, id))
 
   revalidatePath("/attendance")
