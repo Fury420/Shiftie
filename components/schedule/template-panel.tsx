@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { updateEmployeeTemplate, generateDefaultRange } from "@/app/actions/schedule"
 
@@ -64,10 +65,10 @@ function EmployeeTemplateRow({ employee }: { employee: EmployeeTemplate }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3">
-      <div className="flex items-center gap-2 w-36 shrink-0">
-        <Avatar className="size-7">
-          <AvatarFallback className="text-xs">{initials(employee.name)}</AvatarFallback>
+    <div className="flex flex-wrap items-center gap-3 rounded-lg border px-3 py-2.5">
+      <div className="flex items-center gap-2 w-32 shrink-0">
+        <Avatar className="size-6">
+          <AvatarFallback className="text-[10px]">{initials(employee.name)}</AvatarFallback>
         </Avatar>
         <span className="text-sm font-medium truncate">{employee.name}</span>
       </div>
@@ -135,11 +136,28 @@ export function TemplatePanel({ employees, defaultFrom, defaultTo }: TemplatePan
   const router = useRouter()
   const [rangePending, startRangeTransition] = useTransition()
   const [rangeApplied, setRangeApplied] = useState(false)
-
   const [rangeFrom, setRangeFrom] = useState(defaultFrom)
   const [rangeTo, setRangeTo] = useState(defaultTo)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
 
-  const isPending = rangePending
+  function toggleEmployee(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleAll() {
+    if (selected.size === employees.length) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(employees.map((e) => e.id)))
+    }
+  }
+
+  const selectedEmployees = employees.filter((e) => selected.has(e.id))
 
   function handleApplyRange() {
     if (!rangeFrom || !rangeTo || rangeFrom > rangeTo) return
@@ -152,51 +170,96 @@ export function TemplatePanel({ employees, defaultFrom, defaultTo }: TemplatePan
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border bg-muted/30 p-4">
-      <div>
-        <p className="text-sm font-semibold">Šablóna zmien</p>
-        <p className="text-xs text-muted-foreground">
-          Nastavte predvolené dni a časy pre každého zamestnanca
-        </p>
+    <div className="flex gap-4 min-h-0">
+      {/* Left: employee selection */}
+      <div className="w-52 shrink-0 flex flex-col gap-2 border-r pr-4">
+        <div className="flex items-center gap-2 pb-2 border-b">
+          <Checkbox
+            checked={selected.size === employees.length && employees.length > 0}
+            onCheckedChange={toggleAll}
+          />
+          <Label className="text-xs text-muted-foreground cursor-pointer" onClick={toggleAll}>
+            Vybrať všetkých
+          </Label>
+        </div>
+        <div className="flex flex-col gap-1 overflow-y-auto">
+          {employees.map((emp) => (
+            <button
+              key={emp.id}
+              type="button"
+              onClick={() => toggleEmployee(emp.id)}
+              className={cn(
+                "flex items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors",
+                selected.has(emp.id)
+                  ? "bg-primary/10"
+                  : "hover:bg-muted",
+              )}
+            >
+              <Checkbox
+                checked={selected.has(emp.id)}
+                onCheckedChange={() => toggleEmployee(emp.id)}
+                className="pointer-events-none"
+              />
+              <Avatar className="size-6">
+                <AvatarFallback className="text-[10px]">{initials(emp.name)}</AvatarFallback>
+              </Avatar>
+              <span className="text-sm truncate">{emp.name}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Custom range */}
-      <div className="flex items-center gap-2 flex-wrap rounded-lg border bg-background px-4 py-3">
-        <Label className="text-xs text-muted-foreground shrink-0">Vlastné obdobie:</Label>
-        <Input
-          type="date"
-          value={rangeFrom}
-          onChange={(e) => setRangeFrom(e.target.value)}
-          className="h-7 w-36 text-xs px-2"
-        />
-        <span className="text-xs text-muted-foreground">–</span>
-        <Input
-          type="date"
-          value={rangeTo}
-          min={rangeFrom}
-          onChange={(e) => setRangeTo(e.target.value)}
-          className="h-7 w-36 text-xs px-2"
-        />
-        <Button
-          onClick={handleApplyRange}
-          disabled={isPending || !rangeFrom || !rangeTo || rangeFrom > rangeTo}
-          size="sm"
-          className="h-7 px-3 text-xs"
-        >
-          {rangePending ? (
-            <Loader2 className="size-3 animate-spin" />
-          ) : rangeApplied ? (
-            <><Check className="size-3" /> Aplikované</>
-          ) : (
-            <><Send className="size-3" /> Aplikovať</>
-          )}
-        </Button>
-      </div>
+      {/* Right: settings for selected employees + date range */}
+      <div className="flex-1 flex flex-col gap-3 min-w-0">
+        {selectedEmployees.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
+            Vyber zamestnancov vľavo
+          </div>
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground">
+              Nastav dni a časy pre vybraných zamestnancov
+            </p>
+            <div className="flex flex-col gap-2 overflow-y-auto flex-1">
+              {selectedEmployees.map((emp) => (
+                <EmployeeTemplateRow key={emp.id} employee={emp} />
+              ))}
+            </div>
+          </>
+        )}
 
-      <div className="flex flex-col gap-2">
-        {employees.map((emp) => (
-          <EmployeeTemplateRow key={emp.id} employee={emp} />
-        ))}
+        {/* Date range + apply */}
+        <div className="flex items-center gap-2 flex-wrap rounded-lg border bg-muted/30 px-3 py-2.5 mt-auto">
+          <Label className="text-xs text-muted-foreground shrink-0">Obdobie:</Label>
+          <Input
+            type="date"
+            value={rangeFrom}
+            onChange={(e) => setRangeFrom(e.target.value)}
+            className="h-7 w-36 text-xs px-2"
+          />
+          <span className="text-xs text-muted-foreground">–</span>
+          <Input
+            type="date"
+            value={rangeTo}
+            min={rangeFrom}
+            onChange={(e) => setRangeTo(e.target.value)}
+            className="h-7 w-36 text-xs px-2"
+          />
+          <Button
+            onClick={handleApplyRange}
+            disabled={rangePending || !rangeFrom || !rangeTo || rangeFrom > rangeTo}
+            size="sm"
+            className="h-7 px-3 text-xs ml-auto"
+          >
+            {rangePending ? (
+              <Loader2 className="size-3 animate-spin" />
+            ) : rangeApplied ? (
+              <><Check className="size-3" /> Aplikované</>
+            ) : (
+              <><Send className="size-3" /> Aplikovať</>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   )
