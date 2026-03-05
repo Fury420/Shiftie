@@ -165,5 +165,80 @@ await client`
   END $$
 `
 
+// ── Migration 0007: open shifts + open_shift_claims ────────────────────────
+
+// Add "open" value to shift_status enum
+await client`
+  DO $$ BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_enum
+      WHERE enumtypid = 'shift_status'::regtype AND enumlabel = 'open'
+    ) THEN
+      ALTER TYPE "public"."shift_status" ADD VALUE 'open' BEFORE 'published';
+    END IF;
+  END $$
+`
+
+// Create open_shift_claim_status enum
+await client`
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'open_shift_claim_status') THEN
+      CREATE TYPE "public"."open_shift_claim_status" AS ENUM('pending', 'approved', 'rejected');
+    END IF;
+  END $$
+`
+
+// Create open_shift_claims table
+await client`
+  CREATE TABLE IF NOT EXISTS "open_shift_claims" (
+    "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    "organization_id" uuid NOT NULL,
+    "shift_id" uuid NOT NULL,
+    "claimed_by_user_id" text NOT NULL,
+    "status" "open_shift_claim_status" DEFAULT 'pending' NOT NULL,
+    "note" text,
+    "created_at" timestamp DEFAULT now() NOT NULL,
+    "updated_at" timestamp DEFAULT now() NOT NULL
+  )
+`
+
+// Add FK constraints for open_shift_claims
+await client`
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'open_shift_claims_organization_id_organizations_id_fk') THEN
+      ALTER TABLE "open_shift_claims" ADD CONSTRAINT "open_shift_claims_organization_id_organizations_id_fk"
+      FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade;
+    END IF;
+  END $$
+`
+await client`
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'open_shift_claims_shift_id_shifts_id_fk') THEN
+      ALTER TABLE "open_shift_claims" ADD CONSTRAINT "open_shift_claims_shift_id_shifts_id_fk"
+      FOREIGN KEY ("shift_id") REFERENCES "public"."shifts"("id") ON DELETE cascade;
+    END IF;
+  END $$
+`
+await client`
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'open_shift_claims_claimed_by_user_id_user_id_fk') THEN
+      ALTER TABLE "open_shift_claims" ADD CONSTRAINT "open_shift_claims_claimed_by_user_id_user_id_fk"
+      FOREIGN KEY ("claimed_by_user_id") REFERENCES "public"."user"("id") ON DELETE cascade;
+    END IF;
+  END $$
+`
+
+// Make shifts.user_id nullable (for open shifts)
+await client`
+  DO $$ BEGIN
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'shifts' AND column_name = 'user_id' AND is_nullable = 'NO'
+    ) THEN
+      ALTER TABLE "shifts" ALTER COLUMN "user_id" DROP NOT NULL;
+    END IF;
+  END $$
+`
+
 console.log("Migrations complete")
 await client.end()

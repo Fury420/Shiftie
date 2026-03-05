@@ -28,7 +28,7 @@ import { switchOrganization } from "@/app/actions/organizations"
 
 const employeeNav = [
   { href: "/attendance", label: "Dochádzka", icon: Clock },
-  { href: "/schedule", label: "Plán zmien", icon: Calendar },
+  { href: "/schedule", label: "Kalendár", icon: Calendar },
   { href: "/replacements", label: "Žiadosti", icon: ClipboardList },
 ]
 
