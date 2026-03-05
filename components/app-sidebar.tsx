@@ -115,15 +115,17 @@ export function AppSidebar({ user, orgs, activeOrgId, pendingReplacementCount }:
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent transition-colors"
+                  className="flex w-full flex-col items-center gap-0.5 rounded-md px-2 py-2 hover:bg-accent transition-colors disabled:opacity-50"
                   disabled={isPending}
                 >
-                  <Building2 className="size-4 text-muted-foreground shrink-0" />
-                  <span className="flex-1 truncate text-left font-medium">{activeOrg.name}</span>
-                  <ChevronsUpDown className="size-4 text-muted-foreground shrink-0" />
+                  <span className="text-xs text-muted-foreground">Aktívna firma</span>
+                  <span className="flex items-center gap-1.5 text-sm font-medium">
+                    {activeOrg.name}
+                    <ChevronsUpDown className="size-3.5 text-muted-foreground" />
+                  </span>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" side="top" className="w-56">
+              <DropdownMenuContent align="center" side="top" className="w-56">
                 {orgs.map((org) => (
                   <DropdownMenuItem
                     key={org.id}
@@ -138,9 +140,9 @@ export function AppSidebar({ user, orgs, activeOrgId, pendingReplacementCount }:
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <div className="flex items-center gap-2 px-2 py-2 text-sm text-muted-foreground">
-              <Building2 className="size-4 shrink-0" />
-              <span className="truncate font-medium">{activeOrg.name}</span>
+            <div className="flex flex-col items-center gap-0.5 px-2 py-2">
+              <span className="text-xs text-muted-foreground">Aktívna firma</span>
+              <span className="text-sm font-medium truncate max-w-full">{activeOrg.name}</span>
             </div>
           )}
         </SidebarFooter>
