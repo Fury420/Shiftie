@@ -11,7 +11,16 @@ export default async function SuperadminPage() {
   await requireSuperAdmin()
 
   const orgs = await db
-    .select({ id: organizations.id, name: organizations.name, createdAt: organizations.createdAt })
+    .select({
+      id: organizations.id,
+      name: organizations.name,
+      ico: organizations.ico,
+      dic: organizations.dic,
+      address: organizations.address,
+      phone: organizations.phone,
+      email: organizations.email,
+      createdAt: organizations.createdAt,
+    })
     .from(organizations)
     .orderBy(organizations.name)
 
@@ -26,6 +35,11 @@ export default async function SuperadminPage() {
   const rows = orgs.map((o) => ({
     id: o.id,
     name: o.name,
+    ico: o.ico,
+    dic: o.dic,
+    address: o.address,
+    phone: o.phone,
+    email: o.email,
     userCount: countMap.get(o.id) ?? 0,
     createdAt: new Date(o.createdAt).toLocaleDateString("sk-SK", {
       day: "numeric",

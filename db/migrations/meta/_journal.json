@@ -43,6 +43,13 @@
       "when": 1772727461542,
       "tag": "0005_needy_annihilus",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1772728451661,
+      "tag": "0006_hot_stingray",
+      "breakpoints": true
     }
   ]
 }

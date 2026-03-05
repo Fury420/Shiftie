@@ -13,6 +13,11 @@ export const replacementStatusEnum = pgEnum("replacement_status", ["pending", "a
 export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
+  ico: text("ico"),
+  dic: text("dic"),
+  address: text("address"),
+  phone: text("phone"),
+  email: text("email"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })

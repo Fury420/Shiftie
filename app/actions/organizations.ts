@@ -84,12 +84,23 @@ export async function deleteOrganization(id: string) {
   revalidatePath("/superadmin")
 }
 
-export async function updateOrganization(id: string, data: { name: string }) {
+export async function updateOrganization(
+  id: string,
+  data: { name: string; ico?: string; dic?: string; address?: string; phone?: string; email?: string },
+) {
   await requireSuperAdmin()
 
   await db
     .update(organizations)
-    .set({ name: data.name, updatedAt: new Date() })
+    .set({
+      name: data.name,
+      ico: data.ico || null,
+      dic: data.dic || null,
+      address: data.address || null,
+      phone: data.phone || null,
+      email: data.email || null,
+      updatedAt: new Date(),
+    })
     .where(eq(organizations.id, id))
 
   revalidatePath("/superadmin")
