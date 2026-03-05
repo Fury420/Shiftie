@@ -111,19 +111,22 @@ export function AppSidebar({ user, orgs, activeOrgId, pendingReplacementCount }:
       </SidebarContent>
 
       {activeOrg && (
-        <SidebarFooter className="px-3 pb-2 pt-0">
+        <SidebarFooter className="px-3 pb-3 pt-0">
           {orgs.length > 1 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="flex w-full items-center justify-center gap-1.5 px-2 py-1.5 hover:bg-accent rounded-md transition-colors disabled:opacity-50"
+                  className="flex w-full items-center gap-3 rounded-lg border bg-card p-3 text-left transition-colors hover:bg-accent disabled:opacity-50"
                   disabled={isPending}
                 >
-                  <div className="flex flex-col items-center gap-0.5">
-                    <span className="text-xs text-muted-foreground">Aktívna firma</span>
-                    <span className="text-sm font-medium truncate max-w-[150px]">{activeOrg.name}</span>
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                    <Building2 className="size-4" />
                   </div>
-                  <ChevronsUpDown className="size-4 text-muted-foreground shrink-0" />
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Aktívna firma</span>
+                    <span className="truncate text-sm font-semibold">{activeOrg.name}</span>
+                  </div>
+                  <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" side="top" className="w-56">
@@ -141,9 +144,14 @@ export function AppSidebar({ user, orgs, activeOrgId, pendingReplacementCount }:
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <div className="flex flex-col items-center gap-0.5 px-2 py-1.5">
-              <span className="text-xs text-muted-foreground">Aktívna firma</span>
-              <span className="text-sm font-medium truncate max-w-full">{activeOrg.name}</span>
+            <div className="flex w-full items-center gap-3 rounded-lg border bg-card p-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                <Building2 className="size-4" />
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col">
+                <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Aktívna firma</span>
+                <span className="truncate text-sm font-semibold">{activeOrg.name}</span>
+              </div>
             </div>
           )}
         </SidebarFooter>
