@@ -110,14 +110,11 @@ export async function impersonateOrganization(orgId: string) {
     path: "/",
     maxAge: 60 * 60 * 8,
   })
-
-  redirect("/")
 }
 
 export async function stopImpersonating() {
   const cookieStore = await cookies()
   cookieStore.delete("impersonateOrgId")
-  redirect("/superadmin")
 }
 
 export async function deleteOrganization(id: string) {

@@ -1,15 +1,18 @@
 "use client"
 
 import { useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { Shield, X } from "lucide-react"
 import { stopImpersonating } from "@/app/actions/organizations"
 
 export function ImpersonationBanner({ orgName }: { orgName: string }) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   function handleStop() {
     startTransition(async () => {
       await stopImpersonating()
+      router.push("/superadmin")
     })
   }
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Trash2, Pencil, LogIn } from "lucide-react"
@@ -20,6 +21,7 @@ interface OrgRow {
 }
 
 export function OrgsTable({ rows }: { rows: OrgRow[] }) {
+  const router = useRouter()
   const [deleting, setDeleting] = useState<string | null>(null)
   const [editing, setEditing] = useState<OrgRow | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -37,6 +39,7 @@ export function OrgsTable({ rows }: { rows: OrgRow[] }) {
   function handleImpersonate(id: string) {
     startTransition(async () => {
       await impersonateOrganization(id)
+      router.push("/")
     })
   }
 
