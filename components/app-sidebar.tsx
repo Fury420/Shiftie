@@ -124,7 +124,7 @@ export function AppSidebar({ user, orgs, activeOrgId, pendingReplacementCount }:
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col">
                     <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Aktívna firma</span>
-                    <span className="truncate text-sm font-semibold">{activeOrg.name}</span>
+                    <span className="truncate text-sm font-semibold text-foreground">{activeOrg.name}</span>
                   </div>
                   <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
                 </button>
@@ -150,7 +150,7 @@ export function AppSidebar({ user, orgs, activeOrgId, pendingReplacementCount }:
               </div>
               <div className="flex min-w-0 flex-1 flex-col">
                 <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Aktívna firma</span>
-                <span className="truncate text-sm font-semibold">{activeOrg.name}</span>
+                <span className="truncate text-sm font-semibold text-foreground">{activeOrg.name}</span>
               </div>
             </div>
           )}
