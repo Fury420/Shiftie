@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight, Plus, Send, LayoutTemplate } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -92,10 +93,34 @@ export function AdminMonthCalendar({
   defaultFrom,
   defaultTo,
 }: AdminMonthCalendarProps) {
+  const router = useRouter()
+  const [view, setView] = useState<"month" | "week">("month")
+  const [weekIdx, setWeekIdx] = useState(() => {
+    const today = new Date().toISOString().slice(0, 10)
+    const idx = weeks.findIndex((w) => w.some((d) => d.date === today))
+    return idx >= 0 ? idx : 0
+  })
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<ShiftForEdit | undefined>()
   const [defaultDate, setDefaultDate] = useState<string | undefined>()
   const [isPending, startTransition] = useTransition()
+
+  const currentWeek = weeks[weekIdx] ?? weeks[0]
+  const weekLabel = (() => {
+    const s = new Date(currentWeek[0].date + "T12:00:00")
+    const e = new Date(currentWeek[6].date + "T12:00:00")
+    const fmt = (d: Date) => d.toLocaleDateString("sk-SK", { day: "numeric", month: "numeric" })
+    return `${fmt(s)} – ${fmt(e)}`
+  })()
+
+  function handlePrevWeek() {
+    if (weekIdx > 0) setWeekIdx(weekIdx - 1)
+    else router.push(`/admin/schedule?month=${prevMonth}`)
+  }
+  function handleNextWeek() {
+    if (weekIdx < weeks.length - 1) setWeekIdx(weekIdx + 1)
+    else router.push(`/admin/schedule?month=${nextMonth}`)
+  }
 
   const allDraftIds = weeks.flatMap((week) =>
     week.flatMap((day) => day.shifts.filter((s) => s.status === "draft").map((s) => s.id)),
@@ -173,19 +198,23 @@ export function AdminMonthCalendar({
     <>
       <div className="flex flex-col gap-4 w-full">
         <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" asChild>
-              <Link href={`/admin/schedule?month=${prevMonth}`}>
-                <ChevronLeft className="size-4" />
-              </Link>
-            </Button>
-            <span className="text-sm font-medium min-w-40 text-center capitalize">{monthLabel}</span>
-            <Button variant="outline" size="icon" asChild>
-              <Link href={`/admin/schedule?month=${nextMonth}`}>
-                <ChevronRight className="size-4" />
-              </Link>
-            </Button>
-          </div>
+          {view === "month" ? (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" asChild>
+                <Link href={`/admin/schedule?month=${prevMonth}`}><ChevronLeft className="size-4" /></Link>
+              </Button>
+              <span className="text-sm font-medium min-w-40 text-center capitalize">{monthLabel}</span>
+              <Button variant="outline" size="icon" asChild>
+                <Link href={`/admin/schedule?month=${nextMonth}`}><ChevronRight className="size-4" /></Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={handlePrevWeek}><ChevronLeft className="size-4" /></Button>
+              <span className="text-sm font-medium min-w-40 text-center">{weekLabel}</span>
+              <Button variant="outline" size="icon" onClick={handleNextWeek}><ChevronRight className="size-4" /></Button>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             {allDraftIds.length > 0 && (
               <Button variant="secondary" size="sm" onClick={handlePublishAll} disabled={isPending}>
@@ -211,11 +240,15 @@ export function AdminMonthCalendar({
               <Plus className="size-4" />
               Nová zmena
             </Button>
+            <div className="flex rounded-md border p-0.5 gap-0.5">
+              <Button variant={view === "month" ? "secondary" : "ghost"} size="sm" className="h-7 px-3 text-xs" onClick={() => setView("month")}>Mesiac</Button>
+              <Button variant={view === "week" ? "secondary" : "ghost"} size="sm" className="h-7 px-3 text-xs" onClick={() => setView("week")}>Týždeň</Button>
+            </div>
           </div>
         </div>
 
         {/* ── Mobile: agenda list ─────────────────────────── */}
-        <div className="md:hidden flex flex-col gap-2">
+        {view === "month" && <div className="md:hidden flex flex-col gap-2">
           {weeks.flat().filter((d) => d.isCurrentMonth).map((day) => {
             const dateObj = new Date(day.date + "T12:00:00")
             const dayLabel = dateObj.toLocaleDateString("sk-SK", { weekday: "long", day: "numeric", month: "numeric" })
@@ -349,10 +382,10 @@ export function AdminMonthCalendar({
               </div>
             )
           })}
-        </div>
+        </div>}
 
         {/* ── Desktop: grid calendar ───────────────────────── */}
-        <div className="hidden md:block rounded-xl border overflow-hidden">
+        {view === "month" && <div className="hidden md:block rounded-xl border overflow-hidden">
           <div className="grid grid-cols-7 bg-muted/50 border-b">
             {DAY_LABELS.map((label) => (
               <div key={label} className="py-1.5 text-center text-xs font-medium text-muted-foreground">
@@ -502,7 +535,96 @@ export function AdminMonthCalendar({
               })}
             </div>
           ))}
-        </div>
+        </div>}
+
+        {/* ── Week view ──────────────────────────────────── */}
+        {view === "week" && (
+          <div className="rounded-xl border overflow-hidden">
+            <div className="grid grid-cols-7 bg-muted/50 border-b">
+              {currentWeek.map((day) => {
+                const dateObj = new Date(day.date + "T12:00:00")
+                return (
+                  <div key={day.date} className={cn("py-2 text-center border-r last:border-r-0", day.isToday && "bg-primary/10")}>
+                    <div className="text-xs font-medium text-muted-foreground">{DAY_LABELS[dateObj.getDay() === 0 ? 6 : dateObj.getDay() - 1]}</div>
+                    <div className={cn("mx-auto mt-0.5 size-7 rounded-full flex items-center justify-center text-sm font-semibold", day.isToday ? "bg-primary text-primary-foreground" : "text-foreground")}>
+                      {dateObj.getDate()}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="grid grid-cols-7 min-h-64">
+              {currentWeek.map((day) => {
+                const dow = String(new Date(day.date + "T12:00:00").getDay())
+                const bh = businessHours?.get(dow)
+                const hasOpenHours = bh && !bh.isClosed && bh.openTime && bh.closeTime
+                return (
+                  <div key={day.date}
+                    className={cn("border-r last:border-r-0 p-1.5 flex flex-col gap-1 cursor-pointer", day.isToday && "bg-primary/5", !day.isCurrentMonth && "bg-muted/20")}
+                    onClick={() => openCreate(day.date)}>
+                    {hasOpenHours && (
+                      <div className="text-[10px] text-muted-foreground/50 select-none">{bh.openTime!.slice(0, 5)}–{bh.closeTime!.slice(0, 5)}</div>
+                    )}
+                    <div className="flex flex-col gap-1" onClick={(e) => e.stopPropagation()}>
+                      {day.shifts.map((shift) => (
+                        <DropdownMenu key={shift.id}>
+                          <DropdownMenuTrigger asChild>
+                            <button className={cn("w-full text-left rounded-lg px-2 py-1.5 text-xs hover:opacity-80 transition-opacity", shift.status === "draft" && "opacity-60")}
+                              style={{ backgroundColor: shift.color + "28", borderLeft: `3px ${shift.status === "draft" ? "dashed" : "solid"} ${shift.color}`, color: shift.color }}>
+                              <div className="font-semibold truncate">{shift.userName}</div>
+                              <div className="opacity-80">{shift.startTime}–{shift.endTime}{shift.status === "draft" && " · koncept"}</div>
+                              {shift.note && <div className="opacity-60 truncate mt-0.5">{shift.note}</div>}
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            <DropdownMenuItem onClick={() => openEdit(shift)}>Upraviť</DropdownMenuItem>
+                            {shift.status !== "open" && (
+                              <DropdownMenuItem onClick={() => handleToggle(shift.id, shift.status as "draft" | "published")} disabled={isPending}>
+                                {shift.status === "draft" ? "Publikovať" : "Zrušiť publikovanie"}
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id)} disabled={isPending}>Odstrániť</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ))}
+                      {day.openShifts.map((os) => (
+                        <div key={os.id} className="rounded-lg border border-dashed border-muted-foreground/30 px-2 py-1.5 text-xs bg-muted/10">
+                          <div className="font-medium text-muted-foreground">Voľná zmena</div>
+                          <div className="text-muted-foreground/70">{os.startTime}–{os.endTime}</div>
+                          {os.claims.map((claim) => (
+                            <div key={claim.claimId} className="flex items-center justify-between gap-1 mt-1 rounded px-1.5 py-0.5" style={{ backgroundColor: claim.color + "18" }}>
+                              <span className="text-xs font-medium truncate" style={{ color: claim.color }}>{claim.userName.split(" ")[0]} ⏳</span>
+                              <div className="flex gap-0.5 shrink-0">
+                                <button onClick={() => handleApprove(claim.claimId)} disabled={isPending} className="text-green-600 hover:opacity-70"><Check className="size-3" /></button>
+                                <button onClick={() => handleReject(claim.claimId)} disabled={isPending} className="text-destructive hover:opacity-70"><X className="size-3" /></button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                      {day.requestedShifts.map((rs) => (
+                        <div key={rs.id} className="rounded-lg border border-dashed border-amber-400/60 px-2 py-1.5 text-xs bg-amber-50/50 dark:bg-amber-950/20">
+                          <div className="font-medium truncate" style={{ color: rs.color }}>{rs.userName} — požiadavka</div>
+                          <div className="text-muted-foreground">{rs.startTime}–{rs.endTime}</div>
+                          <div className="flex gap-1 mt-1">
+                            <button onClick={() => handleApproveRequest(rs.id)} disabled={isPending} className="text-green-600 hover:opacity-70"><Check className="size-3.5" /></button>
+                            <button onClick={() => handleRejectRequest(rs.id)} disabled={isPending} className="text-destructive hover:opacity-70"><X className="size-3.5" /></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {!day.shifts.length && !day.openShifts.length && !day.requestedShifts.length && (
+                      <div className="flex items-center justify-center text-muted-foreground/30 mt-2">
+                        <Plus className="size-4" />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <ShiftDialog
