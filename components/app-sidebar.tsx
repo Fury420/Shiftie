@@ -116,10 +116,10 @@ export function AppSidebar({ user, orgs, activeOrgId, pendingReplacementCount }:
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="flex w-full items-center justify-between px-2 py-1.5 hover:bg-accent rounded-md transition-colors disabled:opacity-50"
+                  className="flex w-full items-center justify-center gap-1.5 px-2 py-1.5 hover:bg-accent rounded-md transition-colors disabled:opacity-50"
                   disabled={isPending}
                 >
-                  <div className="flex flex-col items-start gap-0.5">
+                  <div className="flex flex-col items-center gap-0.5">
                     <span className="text-xs text-muted-foreground">Aktívna firma</span>
                     <span className="text-sm font-medium truncate max-w-[150px]">{activeOrg.name}</span>
                   </div>
@@ -141,7 +141,7 @@ export function AppSidebar({ user, orgs, activeOrgId, pendingReplacementCount }:
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <div className="flex flex-col gap-0.5 px-2 py-1.5">
+            <div className="flex flex-col items-center gap-0.5 px-2 py-1.5">
               <span className="text-xs text-muted-foreground">Aktívna firma</span>
               <span className="text-sm font-medium truncate max-w-full">{activeOrg.name}</span>
             </div>
