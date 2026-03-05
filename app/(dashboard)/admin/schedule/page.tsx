@@ -4,7 +4,7 @@ import { db } from "@/db"
 import { shifts, user, businessHours, openShiftClaims } from "@/db/schema"
 import { eq, and, gte, lte, asc } from "drizzle-orm"
 import { requireAdmin } from "@/lib/auth-guard"
-import { AdminMonthCalendar, type AdminCalendarDay, type AdminCalendarShift, type AdminOpenShift } from "@/components/schedule/admin-month-calendar"
+import { AdminMonthCalendar, type AdminCalendarDay, type AdminCalendarShift, type AdminOpenShift, type AdminRequestedShift } from "@/components/schedule/admin-month-calendar"
 import { TemplatePanel } from "@/components/schedule/template-panel"
 import { getMonthGrid, toDateStr, formatMonthLabel, shortTime } from "@/lib/week"
 
@@ -26,7 +26,7 @@ export default async function AdminSchedulePage({
   const firstOfMonth = `${monthStr}-01`
   const lastOfMonth = toDateStr(new Date(year, monthNum, 0, 12, 0, 0))
 
-  const [monthShifts, pendingClaims, employees, orgBusinessHours] = await Promise.all([
+  const [monthShifts, requestedShifts, pendingClaims, employees, orgBusinessHours] = await Promise.all([
     db
       .select({
         id: shifts.id,
@@ -39,6 +39,12 @@ export default async function AdminSchedulePage({
       })
       .from(shifts)
       .where(and(eq(shifts.organizationId, orgId), gte(shifts.date, startDate), lte(shifts.date, endDate)))
+      .orderBy(asc(shifts.startTime)),
+
+    db
+      .select({ id: shifts.id, userId: shifts.userId, date: shifts.date, startTime: shifts.startTime, endTime: shifts.endTime, note: shifts.note })
+      .from(shifts)
+      .where(and(eq(shifts.organizationId, orgId), eq(shifts.status, "requested"), gte(shifts.date, startDate), lte(shifts.date, endDate)))
       .orderBy(asc(shifts.startTime)),
 
     db
@@ -93,6 +99,22 @@ export default async function AdminSchedulePage({
           }
         })
 
+      const dayRequestedShifts: AdminRequestedShift[] = requestedShifts
+        .filter((s) => s.date === dateStr)
+        .map((s) => {
+          const emp = s.userId ? colorMap.get(s.userId) : undefined
+          return {
+            id: s.id,
+            userId: s.userId ?? "",
+            userName: emp?.name ?? "—",
+            color: emp?.color ?? "#6b7280",
+            date: dateStr,
+            startTime: shortTime(s.startTime),
+            endTime: shortTime(s.endTime),
+            note: s.note,
+          }
+        })
+
       const dayOpenShifts: AdminOpenShift[] = monthShifts
         .filter((s) => s.date === dateStr && s.status === "open")
         .map((s) => {
@@ -116,6 +138,7 @@ export default async function AdminSchedulePage({
         isToday: dateStr === todayStr,
         shifts: dayShifts,
         openShifts: dayOpenShifts,
+        requestedShifts: dayRequestedShifts,
       }
     }),
   )

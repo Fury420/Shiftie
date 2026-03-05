@@ -5,7 +5,7 @@ import { shifts, user, leaves, businessHours, openShiftClaims } from "@/db/schem
 import { eq, and, gte, lte, asc } from "drizzle-orm"
 import { getSession } from "@/lib/session"
 import { redirect } from "next/navigation"
-import { MonthCalendar, type CalendarDay, type CalendarShift, type OpenShift } from "@/components/schedule/month-calendar"
+import { MonthCalendar, type CalendarDay, type CalendarShift, type OpenShift, type RequestedShift } from "@/components/schedule/month-calendar"
 import { getMonthGrid, toDateStr, formatMonthLabel, shortTime } from "@/lib/week"
 
 export default async function SchedulePage({
@@ -27,7 +27,7 @@ export default async function SchedulePage({
   const endDate = toDateStr(weeks[weeks.length - 1][6])
   const todayStr = toDateStr(new Date())
 
-  const [monthShifts, openMonthShifts, pendingClaims, employees, approvedLeaves, orgBusinessHours] = await Promise.all([
+  const [monthShifts, openMonthShifts, requestedShifts, pendingClaims, employees, approvedLeaves, orgBusinessHours] = await Promise.all([
     db
       .select({
         id: shifts.id,
@@ -58,6 +58,12 @@ export default async function SchedulePage({
       })
       .from(shifts)
       .where(and(eq(shifts.organizationId, orgId), eq(shifts.status, "open"), gte(shifts.date, startDate), lte(shifts.date, endDate)))
+      .orderBy(asc(shifts.startTime)),
+
+    db
+      .select({ id: shifts.id, date: shifts.date, startTime: shifts.startTime, endTime: shifts.endTime, note: shifts.note })
+      .from(shifts)
+      .where(and(eq(shifts.organizationId, orgId), eq(shifts.status, "requested"), eq(shifts.userId, session.user.id), gte(shifts.date, startDate), lte(shifts.date, endDate)))
       .orderBy(asc(shifts.startTime)),
 
     db
@@ -140,12 +146,22 @@ export default async function SchedulePage({
           }
         })
 
+      const dayRequestedShifts: RequestedShift[] = requestedShifts
+        .filter((s) => s.date === dateStr)
+        .map((s) => ({
+          id: s.id,
+          startTime: shortTime(s.startTime),
+          endTime: shortTime(s.endTime),
+          note: s.note,
+        }))
+
       return {
         date: dateStr,
         isCurrentMonth: date.getMonth() === monthNum - 1,
         isToday: dateStr === todayStr,
         shifts: dayShifts,
         openShifts: dayOpenShifts,
+        requestedShifts: dayRequestedShifts,
       }
     }),
   )

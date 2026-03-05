@@ -9,6 +9,8 @@ import { LeaveRequestDialog } from "@/components/leaves/leave-request-dialog"
 import type { ColleagueOption } from "@/components/shift-replacement/request-dialog"
 import { claimShift } from "@/app/actions/schedule"
 import { toast } from "sonner"
+import { RequestShiftDialog } from "./request-shift-dialog"
+import { Plus } from "lucide-react"
 
 export interface CalendarShift {
   id: string
@@ -32,12 +34,20 @@ export interface OpenShift {
   iMayClaim: boolean
 }
 
+export interface RequestedShift {
+  id: string
+  startTime: string
+  endTime: string
+  note: string | null
+}
+
 export interface CalendarDay {
   date: string
   isCurrentMonth: boolean
   isToday: boolean
   shifts: CalendarShift[]
   openShifts: OpenShift[]
+  requestedShifts: RequestedShift[]
 }
 
 export interface BusinessHoursEntry {
@@ -68,6 +78,7 @@ const DAY_LABELS = ["Po", "Ut", "St", "Št", "Pi", "So", "Ne"]
 
 export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmployees, businessHours, currentUserId }: MonthCalendarProps) {
   const [leaveCtx, setLeaveCtx] = useState<LeaveContext | null>(null)
+  const [requestDate, setRequestDate] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   function handleClaim(shiftId: string) {
@@ -121,24 +132,35 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
               className={cn(
                 "rounded-xl border p-3 flex flex-col gap-2",
                 day.isToday && "border-primary/40 bg-primary/5",
-                !day.isToday && day.shifts.length === 0 && day.openShifts.length === 0 && "opacity-50",
+                !day.isToday && day.shifts.length === 0 && day.openShifts.length === 0 && day.requestedShifts.length === 0 && "opacity-50",
               )}
             >
-              <div className="flex items-center gap-2">
-                <div
-                  className={cn(
-                    "size-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
-                    day.isToday ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-                  )}
-                >
-                  {dateObj.getDate()}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={cn(
+                      "size-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
+                      day.isToday ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {dateObj.getDate()}
+                  </div>
+                  <span className={cn("text-sm font-medium capitalize", !day.isCurrentMonth && "text-muted-foreground")}>
+                    {dayLabel}
+                  </span>
                 </div>
-                <span className={cn("text-sm font-medium capitalize", !day.isCurrentMonth && "text-muted-foreground")}>
-                  {dayLabel}
-                </span>
+                {!isPast && (
+                  <button
+                    onClick={() => setRequestDate(day.date)}
+                    className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+                    title="Požiadať o zmenu"
+                  >
+                    <Plus className="size-4" />
+                  </button>
+                )}
               </div>
 
-              {day.shifts.length === 0 && day.openShifts.length === 0 ? (
+              {day.shifts.length === 0 && day.openShifts.length === 0 && day.requestedShifts.length === 0 ? (
                 <p className="text-xs text-muted-foreground pl-10">Žiadne zmeny</p>
               ) : (
                 <div className="flex flex-col gap-1.5 pl-10">
@@ -161,6 +183,17 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
                       </div>
                     )
                   })}
+                  {day.requestedShifts.map((rs) => (
+                    <div key={rs.id} className="rounded-lg border border-dashed border-amber-400/60 px-3 py-2 bg-amber-50/50 dark:bg-amber-950/20">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-amber-700 dark:text-amber-400">Moja požiadavka</span>
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Clock className="size-3" /> Čaká na schválenie
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">{rs.startTime}–{rs.endTime}</div>
+                    </div>
+                  ))}
                   {day.openShifts.map((os) => (
                     <div
                       key={os.id}
@@ -217,7 +250,7 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
             {week.map((day) => {
               const dateObj = new Date(day.date + "T12:00:00")
               const dayNum = dateObj.getDate()
-              const dow = String(dateObj.getDay()) // 0=Sun..6=Sat
+              const dow = String(dateObj.getDay())
               const bh = businessHours?.get(dow)
               const hasOpenHours = bh && !bh.isClosed && bh.openTime && bh.closeTime
               const isPast = day.date < new Date().toISOString().slice(0, 10)
@@ -231,17 +264,28 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
                     day.isToday && "bg-primary/5",
                   )}
                 >
-                  <div
-                    className={cn(
-                      "text-xs font-medium mb-1 w-5 h-5 flex items-center justify-center rounded-full",
-                      day.isToday
-                        ? "bg-primary text-primary-foreground"
-                        : day.isCurrentMonth
-                        ? "text-foreground"
-                        : "text-muted-foreground",
+                  <div className="flex items-center justify-between mb-1 group/day">
+                    <div
+                      className={cn(
+                        "text-xs font-medium w-5 h-5 flex items-center justify-center rounded-full",
+                        day.isToday
+                          ? "bg-primary text-primary-foreground"
+                          : day.isCurrentMonth
+                          ? "text-foreground"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {dayNum}
+                    </div>
+                    {!isPast && day.isCurrentMonth && (
+                      <button
+                        onClick={() => setRequestDate(day.date)}
+                        className="opacity-0 group-hover/day:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted"
+                        title="Požiadať o zmenu"
+                      >
+                        <Plus className="size-3 text-muted-foreground" />
+                      </button>
                     )}
-                  >
-                    {dayNum}
                   </div>
 
                   {(() => {
@@ -262,6 +306,12 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
                             </div>
                           )
                         })}
+                        {day.requestedShifts.map((rs) => (
+                          <div key={rs.id} className="rounded border border-dashed border-amber-400/60 px-1.5 py-0.5 text-xs leading-tight bg-amber-50/50 dark:bg-amber-950/20">
+                            <div className="truncate text-amber-700 dark:text-amber-400 font-medium">Požiadavka</div>
+                            <div className="opacity-70 text-amber-600">{rs.startTime}–{rs.endTime}</div>
+                          </div>
+                        ))}
                         {day.openShifts.map((os) => (
                           <div
                             key={os.id}
@@ -316,6 +366,12 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
         shiftId={leaveCtx?.shiftId}
         shiftLabel={leaveCtx?.shiftLabel}
         colleagues={leaveCtx?.colleagues}
+      />
+
+      <RequestShiftDialog
+        open={!!requestDate}
+        onOpenChange={(open) => { if (!open) setRequestDate(null) }}
+        date={requestDate ?? ""}
       />
     </div>
   )

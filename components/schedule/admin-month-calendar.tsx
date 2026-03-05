@@ -304,6 +304,24 @@ export function AdminMonthCalendar({
                         )}
                       </div>
                     ))}
+                    {day.requestedShifts.map((rs) => (
+                      <div key={rs.id} className="rounded-lg border border-dashed border-amber-400/60 px-3 py-2 flex flex-col gap-1.5 bg-amber-50/50 dark:bg-amber-950/20">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-sm font-medium text-amber-700 dark:text-amber-400" style={{ color: rs.color }}>{rs.userName.split(" ")[0]} — požiadavka</div>
+                            <div className="text-xs text-muted-foreground">{rs.startTime}–{rs.endTime}</div>
+                          </div>
+                          <div className="flex gap-1">
+                            <button onClick={() => handleApproveRequest(rs.id)} disabled={isPending} className="p-1 rounded hover:bg-green-100 text-green-600">
+                              <Check className="size-4" />
+                            </button>
+                            <button onClick={() => handleRejectRequest(rs.id)} disabled={isPending} className="p-1 rounded hover:bg-red-100 text-destructive">
+                              <X className="size-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -359,6 +377,21 @@ export function AdminMonthCalendar({
                         </button>
                       </div>
                     ))}
+                  </div>
+                ))
+
+                const requestedShiftBlocks = day.requestedShifts.map((rs) => (
+                  <div key={rs.id} className="rounded border border-dashed border-amber-400/60 px-1 py-0.5 text-xs leading-tight bg-amber-50/50 dark:bg-amber-950/20">
+                    <div className="truncate font-medium text-[10px]" style={{ color: rs.color }}>{rs.userName.split(" ")[0]} ⏳</div>
+                    <div className="opacity-70 text-[9px] text-amber-600">{rs.startTime}–{rs.endTime}</div>
+                    <div className="flex gap-0.5 mt-0.5">
+                      <button onClick={() => handleApproveRequest(rs.id)} disabled={isPending} className="text-green-600 hover:opacity-70 disabled:opacity-30">
+                        <Check className="size-2.5" />
+                      </button>
+                      <button onClick={() => handleRejectRequest(rs.id)} disabled={isPending} className="text-destructive hover:opacity-70 disabled:opacity-30">
+                        <X className="size-2.5" />
+                      </button>
+                    </div>
                   </div>
                 ))
 
@@ -432,9 +465,10 @@ export function AdminMonthCalendar({
                         </div>
                         {shiftBlocks}
                         {openShiftBlocks}
+                        {requestedShiftBlocks}
                       </div>
                     ) : (
-                      <div className="flex flex-col gap-0.5">{shiftBlocks}{openShiftBlocks}</div>
+                      <div className="flex flex-col gap-0.5">{shiftBlocks}{openShiftBlocks}{requestedShiftBlocks}</div>
                     )}
                   </div>
                 )
