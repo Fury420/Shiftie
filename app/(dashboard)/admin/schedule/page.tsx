@@ -162,7 +162,7 @@ export default async function AdminSchedulePage({
   }))
 
   return (
-    <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
+    <div className="flex flex-col gap-6 w-full">
       <AdminMonthCalendar
         weeks={calendarWeeks}
         employees={employeeOptions}

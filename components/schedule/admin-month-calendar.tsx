@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ShiftDialog, type ShiftForEdit, type EmployeeOption } from "./shift-dialog"
 import { TemplatePanel, type EmployeeTemplate } from "./template-panel"
 import { deleteShift, toggleShiftStatus, publishDraftShifts, approveShiftClaim, rejectShiftClaim, approveShiftRequest, rejectShiftRequest } from "@/app/actions/schedule"
@@ -171,7 +171,7 @@ export function AdminMonthCalendar({
 
   return (
     <>
-      <div className="flex flex-col gap-4 max-w-5xl mx-auto w-full">
+      <div className="flex flex-col gap-4 w-full">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" asChild>
@@ -193,22 +193,20 @@ export function AdminMonthCalendar({
                 Publikovať všetky ({allDraftIds.length})
               </Button>
             )}
-            <Sheet>
-              <SheetTrigger asChild>
+            <Dialog>
+              <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
                   <LayoutTemplate className="size-4" />
                   Šablóny
                 </Button>
-              </SheetTrigger>
-              <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-                <SheetHeader>
-                  <SheetTitle>Šablóna zmien</SheetTitle>
-                </SheetHeader>
-                <div className="mt-4">
-                  <TemplatePanel employees={templates} defaultFrom={defaultFrom} defaultTo={defaultTo} />
-                </div>
-              </SheetContent>
-            </Sheet>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Šablóna zmien</DialogTitle>
+                </DialogHeader>
+                <TemplatePanel employees={templates} defaultFrom={defaultFrom} defaultTo={defaultTo} />
+              </DialogContent>
+            </Dialog>
             <Button size="sm" onClick={() => openCreate()}>
               <Plus className="size-4" />
               Nová zmena
