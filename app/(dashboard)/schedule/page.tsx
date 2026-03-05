@@ -7,7 +7,6 @@ import { getSession } from "@/lib/session"
 import { redirect } from "next/navigation"
 import { MonthCalendar, type CalendarDay, type CalendarShift } from "@/components/schedule/month-calendar"
 import { getMonthGrid, toDateStr, formatMonthLabel, shortTime } from "@/lib/week"
-import { getBusinessHoursMapForRange } from "@/app/actions/business-hours"
 
 export default async function SchedulePage({
   searchParams,
@@ -28,7 +27,7 @@ export default async function SchedulePage({
   const endDate = toDateStr(weeks[weeks.length - 1][6])
   const todayStr = toDateStr(new Date())
 
-  const [monthShifts, employees, approvedLeaves, businessHoursMap] = await Promise.all([
+  const [monthShifts, employees, approvedLeaves] = await Promise.all([
     db
       .select({
         id: shifts.id,
@@ -59,8 +58,6 @@ export default async function SchedulePage({
       .select({ userId: leaves.userId, startDate: leaves.startDate, endDate: leaves.endDate })
       .from(leaves)
       .where(and(eq(leaves.organizationId, orgId), eq(leaves.status, "approved"), lte(leaves.startDate, endDate), gte(leaves.endDate, startDate))),
-
-    getBusinessHoursMapForRange(orgId, startDate, endDate),
   ])
 
   const onLeave = (userId: string, date: string) =>
@@ -93,13 +90,11 @@ export default async function SchedulePage({
           }
         })
 
-      const dayHours = businessHoursMap[dateStr]
       return {
         date: dateStr,
         isCurrentMonth: date.getMonth() === monthNum - 1,
         isToday: dateStr === todayStr,
         shifts: dayShifts,
-        businessHours: dayHours ?? null,
       }
     }),
   )

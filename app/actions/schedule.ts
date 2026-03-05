@@ -5,9 +5,7 @@ import { shifts, user } from "@/db/schema"
 import { eq, inArray, and, lt, gt, ne, isNull } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { requireAdmin, getOrganizationId } from "@/lib/auth-guard"
-import { getSession } from "@/lib/session"
 import { toDateStr, addDays } from "@/lib/week"
-import { getBusinessHoursForDate } from "@/app/actions/business-hours"
 
 async function checkConflict(
   userId: string,
@@ -31,24 +29,6 @@ async function checkConflict(
   if (conflict) throw new Error("Tento zamestnanec má v tomto čase už inú zmenu.")
 }
 
-/** Kontrola, že čas zmeny je v rámci otváracích hodín pre daný deň. */
-async function validateShiftWithinBusinessHours(
-  orgId: string,
-  date: string,
-  startTime: string,
-  endTime: string,
-) {
-  const hours = await getBusinessHoursForDate(orgId, date)
-  if (hours.isClosed || !hours.openTime || !hours.closeTime) {
-    throw new Error("V tento deň je podnik zatvorený.")
-  }
-  const open = hours.openTime.slice(0, 5)
-  const close = hours.closeTime.slice(0, 5)
-  if (startTime < open || endTime > close) {
-    throw new Error(`Zmena musí byť v rámci otváracích hodín (${open} – ${close}).`)
-  }
-}
-
 export async function createShift(data: {
   userId: string
   date: string
@@ -58,7 +38,6 @@ export async function createShift(data: {
 }) {
   await requireAdmin()
   const orgId = await getOrganizationId()
-  await validateShiftWithinBusinessHours(orgId, data.date, data.startTime, data.endTime)
   await checkConflict(data.userId, data.date, data.startTime, data.endTime)
 
   await db.insert(shifts).values({
@@ -81,7 +60,6 @@ export async function updateShift(
 ) {
   await requireAdmin()
   const orgId = await getOrganizationId()
-  await validateShiftWithinBusinessHours(orgId, data.date, data.startTime, data.endTime)
   await checkConflict(data.userId, data.date, data.startTime, data.endTime, id)
 
   await db
@@ -250,71 +228,4 @@ export async function publishDraftShifts(ids: string[]) {
 
   revalidatePath("/admin/schedule")
   revalidatePath("/schedule")
-}
-
-/** Zamestnanec sa zapíše na blok (deň) – vytvorí sa zmena v čase otváracích hodín. */
-export async function claimShiftBlock(date: string) {
-  const session = await getSession()
-  if (!session) throw new Error("Neprihlásený")
-  const orgId = await getOrganizationId()
-
-  const hours = await getBusinessHoursForDate(orgId, date)
-  if (hours.isClosed || !hours.openTime || !hours.closeTime) {
-    throw new Error("V tento deň je podnik zatvorený.")
-  }
-
-  const startTime = hours.openTime.slice(0, 5)
-  const endTime = hours.closeTime.slice(0, 5)
-
-  const [existing] = await db
-    .select({ id: shifts.id })
-    .from(shifts)
-    .where(
-      and(
-        eq(shifts.organizationId, orgId),
-        eq(shifts.userId, session.user.id),
-        eq(shifts.date, date),
-      ),
-    )
-    .limit(1)
-  if (existing) throw new Error("Na tento deň už máte zmenu.")
-
-  await checkConflict(session.user.id, date, startTime, endTime)
-
-  await db.insert(shifts).values({
-    organizationId: orgId,
-    userId: session.user.id,
-    date,
-    startTime,
-    endTime,
-    status: "published",
-  })
-
-  revalidatePath("/schedule")
-  revalidatePath("/attendance")
-}
-
-/** Zamestnanec zruší svoju zmenu (odhlási sa z bloku). */
-export async function unclaimShift(shiftId: string) {
-  const session = await getSession()
-  if (!session) throw new Error("Neprihlásený")
-  const orgId = await getOrganizationId()
-
-  const [shift] = await db
-    .select({ id: shifts.id })
-    .from(shifts)
-    .where(
-      and(
-        eq(shifts.id, shiftId),
-        eq(shifts.organizationId, orgId),
-        eq(shifts.userId, session.user.id),
-      ),
-    )
-    .limit(1)
-  if (!shift) throw new Error("Zmenu nenašiel alebo nemáte oprávnenie ju zrušiť.")
-
-  await db.delete(shifts).where(eq(shifts.id, shiftId))
-
-  revalidatePath("/schedule")
-  revalidatePath("/attendance")
 }

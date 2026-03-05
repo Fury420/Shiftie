@@ -30,7 +30,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=deps /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
 COPY --from=deps /app/node_modules/postgres ./node_modules/postgres
 COPY --from=builder /app/db/migrations ./db/migrations
-COPY --from=builder /app/scripts/migrate.mjs ./db/migrate.mjs
+COPY --from=builder /app/db/migrate.mjs ./db/migrate.mjs
 
 USER nextjs
 EXPOSE 3000
