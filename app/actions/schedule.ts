@@ -84,6 +84,56 @@ export async function updateShift(
   revalidatePath("/schedule")
 }
 
+export async function requestShift(data: {
+  date: string
+  startTime: string
+  endTime: string
+  note?: string
+}) {
+  const session = await getSession()
+  if (!session) throw new Error("Nie ste prihlásený")
+  const orgId = (session.user as { organizationId?: string | null }).organizationId!
+  const userId = session.user.id
+
+  await checkConflict(userId, data.date, data.startTime, data.endTime)
+
+  await db.insert(shifts).values({
+    organizationId: orgId,
+    userId,
+    date: data.date,
+    startTime: data.startTime,
+    endTime: data.endTime,
+    note: data.note || null,
+    status: "requested",
+  })
+
+  revalidatePath("/schedule")
+  revalidatePath("/admin/schedule")
+}
+
+export async function approveShiftRequest(id: string) {
+  await requireAdmin()
+  const orgId = await getOrganizationId()
+
+  await db
+    .update(shifts)
+    .set({ status: "published", updatedAt: new Date() })
+    .where(and(eq(shifts.id, id), eq(shifts.organizationId, orgId)))
+
+  revalidatePath("/admin/schedule")
+  revalidatePath("/schedule")
+}
+
+export async function rejectShiftRequest(id: string) {
+  await requireAdmin()
+  const orgId = await getOrganizationId()
+
+  await db.delete(shifts).where(and(eq(shifts.id, id), eq(shifts.organizationId, orgId)))
+
+  revalidatePath("/admin/schedule")
+  revalidatePath("/schedule")
+}
+
 export async function claimShift(shiftId: string) {
   const session = await getSession()
   if (!session) throw new Error("Nie ste prihlásený")

@@ -211,6 +211,19 @@ await client`
   END $$
 `
 
+// ── Migration: shift_status "requested" ────────────────────────────────────
+
+await client`
+  DO $$ BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_enum
+      WHERE enumtypid = 'shift_status'::regtype AND enumlabel = 'requested'
+    ) THEN
+      ALTER TYPE "public"."shift_status" ADD VALUE 'requested' BEFORE 'draft';
+    END IF;
+  END $$
+`
+
 // ── Migration 0007: open shifts + open_shift_claims ────────────────────────
 
 // Add "open" value to shift_status enum

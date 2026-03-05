@@ -4,7 +4,7 @@ import { pgTable, text, timestamp, pgEnum, date, time, uuid, boolean, decimal, u
 
 export const roleEnum = pgEnum("role", ["superadmin", "admin", "employee"])
 export const licenseTypeEnum = pgEnum("license_type", ["free", "basic", "pro"])
-export const shiftStatusEnum = pgEnum("shift_status", ["draft", "open", "published"])
+export const shiftStatusEnum = pgEnum("shift_status", ["requested", "draft", "open", "published"])
 export const openShiftClaimStatusEnum = pgEnum("open_shift_claim_status", ["pending", "approved", "rejected"])
 export const leaveTypeEnum = pgEnum("leave_type", ["vacation", "sick", "personal"])
 export const leaveStatusEnum = pgEnum("leave_status", ["pending", "approved", "rejected"])
