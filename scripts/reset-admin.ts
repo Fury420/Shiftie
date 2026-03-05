@@ -2,7 +2,7 @@ import { config } from "dotenv"
 config({ path: ".env.local" })
 
 async function main() {
-  const email = process.env.ADMIN_EMAIL ?? "admin@onshift.local"
+  const email = process.env.ADMIN_EMAIL ?? "admin@shiftie.local"
   const password = process.env.ADMIN_PASSWORD
   const name = process.env.ADMIN_NAME ?? "Admin"
 

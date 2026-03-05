@@ -1,4 +1,4 @@
-# OnShift
+# Shiftie
 
 Employee attendance tracking app for a single bar. Replaces an Excel spreadsheet.
 
@@ -58,7 +58,7 @@ npx tsx scripts/seed-admin.ts
 ```
 
 Default credentials (configurable via env):
-- `ADMIN_EMAIL` — default: `admin@onshift.sk`
+- `ADMIN_EMAIL` — default: `admin@shiftie.sk`
 - `ADMIN_PASSWORD` — default: `changeme123`
 - `ADMIN_NAME` — default: `Admin`
 

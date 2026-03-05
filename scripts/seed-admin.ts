@@ -1,7 +1,7 @@
 import { config } from "dotenv"
 config({ path: ".env.local" })
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@onshift.sk"
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@shiftie.sk"
 const ADMIN_NAME = process.env.ADMIN_NAME ?? "Admin"
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "changeme123"
 
