@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic"
 
 import { redirect } from "next/navigation"
 import { getSession } from "@/lib/session"
+import { SuperadminHeader } from "./superadmin/_components/superadmin-header"
 
 export default async function SuperadminLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession()
@@ -11,11 +12,7 @@ export default async function SuperadminLayout({ children }: { children: React.R
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b px-6 py-3 flex items-center gap-3">
-        <span className="font-semibold text-sm">Shiftie</span>
-        <span className="text-muted-foreground text-sm">·</span>
-        <span className="text-sm text-muted-foreground">Superadmin</span>
-      </header>
+      <SuperadminHeader />
       <main className="p-6">{children}</main>
     </div>
   )
