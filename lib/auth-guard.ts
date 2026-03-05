@@ -9,8 +9,13 @@ export async function requireAdmin() {
   const session = await getSession()
   if (!session) redirect("/login")
   const role = (session.user as { role?: string }).role
-  if (role !== "admin") redirect("/")
-  return session
+  if (role === "admin") return session
+  // Superadmin impersonating a tenant gets admin-level access
+  if (role === "superadmin") {
+    const cookieStore = await cookies()
+    if (cookieStore.get("impersonateOrgId")?.value) return session
+  }
+  redirect("/")
 }
 
 export async function requireSuperAdmin() {
