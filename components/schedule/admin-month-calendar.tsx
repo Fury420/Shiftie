@@ -459,13 +459,18 @@ export function AdminMonthCalendar({
                     </div>
 
                     {hasOpenHours ? (
-                      <div className="rounded-md border border-dashed border-muted-foreground/25 bg-muted/10 px-1 pt-0.5 pb-1 flex flex-col gap-0.5 min-h-10">
+                      <div
+                        className="rounded-md border border-dashed border-muted-foreground/25 bg-muted/10 px-1 pt-0.5 pb-1 flex flex-col gap-0.5 min-h-10 cursor-pointer"
+                        onClick={() => openCreate(day.date)}
+                      >
                         <div className="text-[9px] text-muted-foreground/50 leading-none mb-0.5 select-none">
                           {bh.openTime!.slice(0, 5)}–{bh.closeTime!.slice(0, 5)}
                         </div>
-                        {shiftBlocks}
-                        {openShiftBlocks}
-                        {requestedShiftBlocks}
+                        <div className="flex flex-col gap-0.5" onClick={(e) => e.stopPropagation()}>
+                          {shiftBlocks}
+                          {openShiftBlocks}
+                          {requestedShiftBlocks}
+                        </div>
                       </div>
                     ) : (
                       <div className="flex flex-col gap-0.5">{shiftBlocks}{openShiftBlocks}{requestedShiftBlocks}</div>

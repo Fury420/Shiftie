@@ -197,18 +197,13 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
                   {day.openShifts.map((os) => (
                     <div
                       key={os.id}
-                      className="rounded-lg border border-dashed border-muted-foreground/30 px-3 py-2 flex flex-col gap-1 bg-muted/10"
+                      className={cn("rounded-lg border border-dashed border-muted-foreground/30 px-3 py-2 flex flex-col gap-1 bg-muted/10", os.iMayClaim && !isPast && "cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors")}
+                      onClick={os.iMayClaim && !isPast ? () => handleClaim(os.id) : undefined}
                     >
                       <div className="flex items-center justify-between">
                         <div className="text-sm font-medium text-muted-foreground">Voľná zmena</div>
                         {os.iMayClaim && !isPast && (
-                          <button
-                            onClick={() => handleClaim(os.id)}
-                            disabled={isPending}
-                            className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
-                          >
-                            Prihlásiť sa
-                          </button>
+                          <span className="text-xs font-medium text-primary">Prihlásiť sa</span>
                         )}
                         {os.myClaimId && (
                           <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -315,21 +310,12 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
                         {day.openShifts.map((os) => (
                           <div
                             key={os.id}
-                            className="rounded border border-dashed border-muted-foreground/40 px-1.5 py-0.5 text-xs leading-tight bg-background"
+                            className={cn("rounded border border-dashed border-muted-foreground/40 px-1.5 py-0.5 text-xs leading-tight bg-background", os.iMayClaim && !isPast && "cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors")}
+                            onClick={os.iMayClaim && !isPast ? () => handleClaim(os.id) : undefined}
                           >
                             <div className="flex items-center justify-between gap-0.5">
                               <span className="truncate text-muted-foreground font-medium">Voľná</span>
-                              {os.iMayClaim && !isPast ? (
-                                <button
-                                  onClick={() => handleClaim(os.id)}
-                                  disabled={isPending}
-                                  className="text-[9px] text-primary hover:underline disabled:opacity-50 shrink-0"
-                                >
-                                  +
-                                </button>
-                              ) : os.myClaimId ? (
-                                <Clock className="size-2.5 text-muted-foreground shrink-0" />
-                              ) : null}
+                              {os.myClaimId && <Clock className="size-2.5 text-muted-foreground shrink-0" />}
                             </div>
                             <div className="opacity-60">{os.startTime}–{os.endTime}</div>
                             {os.claimedByUsers.map((u) => (
@@ -341,12 +327,18 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
                         ))}
                       </>
                     )
+                    const canRequest = !isPast && day.isCurrentMonth
                     return hasOpenHours ? (
-                      <div className="rounded-md border border-dashed border-muted-foreground/25 bg-muted/10 px-1 pt-0.5 pb-1 flex flex-col gap-0.5 min-h-10">
+                      <div
+                        className={cn("rounded-md border border-dashed border-muted-foreground/25 bg-muted/10 px-1 pt-0.5 pb-1 flex flex-col gap-0.5 min-h-10", canRequest && "cursor-pointer")}
+                        onClick={canRequest ? () => setRequestDate(day.date) : undefined}
+                      >
                         <div className="text-[9px] text-muted-foreground/50 leading-none mb-0.5 select-none">
                           {bh.openTime!.slice(0, 5)}–{bh.closeTime!.slice(0, 5)}
                         </div>
-                        {shiftBlocks}
+                        <div className="flex flex-col gap-0.5" onClick={(e) => e.stopPropagation()}>
+                          {shiftBlocks}
+                        </div>
                       </div>
                     ) : (
                       <div className="flex flex-col gap-0.5">{shiftBlocks}</div>
