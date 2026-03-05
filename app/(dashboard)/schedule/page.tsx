@@ -4,6 +4,7 @@ import { db } from "@/db"
 import { shifts, user, leaves, businessHours, openShiftClaims } from "@/db/schema"
 import { eq, and, gte, lte, asc } from "drizzle-orm"
 import { getSession } from "@/lib/session"
+import { getOrganizationId } from "@/lib/auth-guard"
 import { redirect } from "next/navigation"
 import { MonthCalendar, type CalendarDay, type CalendarShift, type OpenShift, type RequestedShift } from "@/components/schedule/month-calendar"
 import { getMonthGrid, toDateStr, formatMonthLabel, shortTime } from "@/lib/week"
@@ -18,7 +19,7 @@ export default async function SchedulePage({
 
   const sessionUser = session.user as { role?: string; organizationId?: string | null }
   const isAdmin = sessionUser.role === "admin"
-  const orgId = sessionUser.organizationId!
+  const orgId = await getOrganizationId()
 
   const { month } = await searchParams
   const { year, monthNum, weeks } = getMonthGrid(month)

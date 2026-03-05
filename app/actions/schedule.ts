@@ -92,7 +92,7 @@ export async function requestShift(data: {
 }) {
   const session = await getSession()
   if (!session) throw new Error("Nie ste prihlásený")
-  const orgId = (session.user as { organizationId?: string | null }).organizationId!
+  const orgId = await getOrganizationId()
   const userId = session.user.id
 
   await checkConflict(userId, data.date, data.startTime, data.endTime)
@@ -137,7 +137,7 @@ export async function rejectShiftRequest(id: string) {
 export async function claimShift(shiftId: string) {
   const session = await getSession()
   if (!session) throw new Error("Nie ste prihlásený")
-  const orgId = (session.user as { organizationId?: string | null }).organizationId!
+  const orgId = await getOrganizationId()
   const userId = session.user.id
 
   // Check shift exists and is open

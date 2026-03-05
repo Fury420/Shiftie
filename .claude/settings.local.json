@@ -38,7 +38,8 @@
       "Bash(find C:\\\\Users\\\\Boss\\\\Projekty\\\\OnShift\\\\OnShift\\\\app\\\\\\(dashboard\\)\\\\admin:*)",
       "Bash(rm:*)",
       "Bash(psql:*)",
-      "Bash(DATABASE_URL=\"postgres://postgres:Ll1uiYZ8rqYIv4nFb1sDgwjOxe2ZTGKSnQisPmxPDB9XXDerZbzV7DlqoZNKEQte@yws0kkg4ww8cgokcs0s0occo:5432/postgres\" node:*)"
+      "Bash(DATABASE_URL=\"postgres://postgres:Ll1uiYZ8rqYIv4nFb1sDgwjOxe2ZTGKSnQisPmxPDB9XXDerZbzV7DlqoZNKEQte@yws0kkg4ww8cgokcs0s0occo:5432/postgres\" node:*)",
+      "Bash(head:*)"
     ]
   }
 }
