@@ -224,7 +224,7 @@ export async function deleteShift(id: string) {
   revalidatePath("/schedule")
 }
 
-export async function toggleShiftStatus(id: string, current: "draft" | "open" | "published") {
+export async function toggleShiftStatus(id: string, current: "requested" | "draft" | "open" | "published") {
   await requireAdmin()
   const orgId = await getOrganizationId()
 

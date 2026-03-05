@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ShiftDialog, type ShiftForEdit, type EmployeeOption } from "./shift-dialog"
-import { deleteShift, toggleShiftStatus, publishDraftShifts, approveShiftClaim, rejectShiftClaim } from "@/app/actions/schedule"
+import { deleteShift, toggleShiftStatus, publishDraftShifts, approveShiftClaim, rejectShiftClaim, approveShiftRequest, rejectShiftRequest } from "@/app/actions/schedule"
 import { Check, X } from "lucide-react"
 import { toast } from "sonner"
 
@@ -25,7 +25,7 @@ export interface AdminCalendarShift {
   startTime: string
   endTime: string
   note: string | null
-  status: "draft" | "open" | "published"
+  status: "requested" | "draft" | "open" | "published"
   color: string
 }
 
@@ -38,12 +38,24 @@ export interface AdminOpenShift {
   claims: { claimId: string; userId: string; userName: string; color: string }[]
 }
 
+export interface AdminRequestedShift {
+  id: string
+  userId: string
+  userName: string
+  color: string
+  date: string
+  startTime: string
+  endTime: string
+  note: string | null
+}
+
 export interface AdminCalendarDay {
   date: string
   isCurrentMonth: boolean
   isToday: boolean
   shifts: AdminCalendarShift[]
   openShifts: AdminOpenShift[]
+  requestedShifts: AdminRequestedShift[]
 }
 
 export interface BusinessHoursEntry {
@@ -103,6 +115,28 @@ export function AdminMonthCalendar({
 
   function handlePublishAll() {
     startTransition(() => publishDraftShifts(allDraftIds))
+  }
+
+  function handleApproveRequest(shiftId: string) {
+    startTransition(async () => {
+      try {
+        await approveShiftRequest(shiftId)
+        toast.success("Požiadavka schválená")
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Chyba")
+      }
+    })
+  }
+
+  function handleRejectRequest(shiftId: string) {
+    startTransition(async () => {
+      try {
+        await rejectShiftRequest(shiftId)
+        toast.success("Požiadavka zamietnutá")
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Chyba")
+      }
+    })
   }
 
   function handleApprove(claimId: string) {
@@ -191,7 +225,7 @@ export function AdminMonthCalendar({
                   </button>
                 </div>
 
-                {day.shifts.length === 0 && day.openShifts.length === 0 ? (
+                {day.shifts.length === 0 && day.openShifts.length === 0 && day.requestedShifts.length === 0 ? (
                   <p className="text-xs text-muted-foreground pl-10">Žiadne zmeny</p>
                 ) : (
                   <div className="flex flex-col gap-1.5 pl-10">
