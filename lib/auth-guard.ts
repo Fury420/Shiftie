@@ -25,9 +25,18 @@ export async function getOrganizationId(): Promise<string> {
   const session = await getSession()
   if (!session) throw new Error("Neprihlásený")
 
+  const role = (session.user as { role?: string }).role
   const cookieStore = await cookies()
-  const cookieOrgId = cookieStore.get("activeOrgId")?.value
 
+  // Superadmin impersonation
+  if (role === "superadmin") {
+    const impersonateOrgId = cookieStore.get("impersonateOrgId")?.value
+    if (!impersonateOrgId) throw new Error("Superadmin nemá nastavenú organizáciu")
+    return impersonateOrgId
+  }
+
+  // Regular users: check activeOrgId cookie first
+  const cookieOrgId = cookieStore.get("activeOrgId")?.value
   if (cookieOrgId) {
     const [membership] = await db
       .select({ organizationId: userOrganizations.organizationId })

@@ -8,9 +8,15 @@ import { revalidatePath } from "next/cache"
 import { requireSuperAdmin } from "@/lib/auth-guard"
 import { getSession } from "@/lib/session"
 import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 
 export async function createOrganization(data: {
   name: string
+  ico?: string
+  dic?: string
+  address?: string
+  phone?: string
+  email?: string
   adminName: string
   adminEmail: string
   adminPassword: string
@@ -19,7 +25,14 @@ export async function createOrganization(data: {
 
   const [org] = await db
     .insert(organizations)
-    .values({ name: data.name })
+    .values({
+      name: data.name,
+      ico: data.ico || null,
+      dic: data.dic || null,
+      address: data.address || null,
+      phone: data.phone || null,
+      email: data.email || null,
+    })
     .returning({ id: organizations.id })
 
   const result = await auth.api.signUpEmail({
@@ -76,6 +89,35 @@ export async function switchOrganization(orgId: string) {
   })
 
   revalidatePath("/", "layout")
+}
+
+export async function impersonateOrganization(orgId: string) {
+  await requireSuperAdmin()
+
+  const [org] = await db
+    .select({ id: organizations.id })
+    .from(organizations)
+    .where(eq(organizations.id, orgId))
+    .limit(1)
+
+  if (!org) throw new Error("Organizácia neexistuje")
+
+  const cookieStore = await cookies()
+  cookieStore.set("impersonateOrgId", orgId, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 8,
+  })
+
+  redirect("/")
+}
+
+export async function stopImpersonating() {
+  const cookieStore = await cookies()
+  cookieStore.delete("impersonateOrgId")
+  redirect("/superadmin")
 }
 
 export async function deleteOrganization(id: string) {

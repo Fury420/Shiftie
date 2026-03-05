@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Trash2, Pencil } from "lucide-react"
-import { deleteOrganization } from "@/app/actions/organizations"
+import { Trash2, Pencil, LogIn } from "lucide-react"
+import { deleteOrganization, impersonateOrganization } from "@/app/actions/organizations"
 import { EditOrgDialog } from "./edit-org-dialog"
 
 interface OrgRow {
@@ -22,6 +22,7 @@ interface OrgRow {
 export function OrgsTable({ rows }: { rows: OrgRow[] }) {
   const [deleting, setDeleting] = useState<string | null>(null)
   const [editing, setEditing] = useState<OrgRow | null>(null)
+  const [isPending, startTransition] = useTransition()
 
   async function handleDelete(id: string, name: string) {
     if (!confirm(`Naozaj chceš zmazať organizáciu "${name}"? Táto akcia je nezvratná.`)) return
@@ -31,6 +32,12 @@ export function OrgsTable({ rows }: { rows: OrgRow[] }) {
     } finally {
       setDeleting(null)
     }
+  }
+
+  function handleImpersonate(id: string) {
+    startTransition(async () => {
+      await impersonateOrganization(id)
+    })
   }
 
   if (rows.length === 0) {
@@ -58,6 +65,15 @@ export function OrgsTable({ rows }: { rows: OrgRow[] }) {
               <TableCell>{row.createdAt}</TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={isPending}
+                    onClick={() => handleImpersonate(row.id)}
+                    title="Vstúpiť ako tenant"
+                  >
+                    <LogIn className="size-4" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
