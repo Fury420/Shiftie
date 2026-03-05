@@ -32,6 +32,7 @@ export interface AdminCalendarDay {
   isCurrentMonth: boolean
   isToday: boolean
   shifts: AdminCalendarShift[]
+  businessHours: { openTime: string; closeTime: string } | null
 }
 
 interface AdminMonthCalendarProps {
@@ -148,6 +149,12 @@ export function AdminMonthCalendar({
                   </button>
                 </div>
 
+                {day.businessHours && (
+                  <p className="text-xs text-muted-foreground pl-10">
+                    Otvorené: {day.businessHours.openTime}–{day.businessHours.closeTime}
+                  </p>
+                )}
+
                 {day.shifts.length === 0 ? (
                   <p className="text-xs text-muted-foreground pl-10">Žiadne zmeny</p>
                 ) : (
@@ -236,6 +243,12 @@ export function AdminMonthCalendar({
                         <Plus className="size-3 text-muted-foreground" />
                       </button>
                     </div>
+
+                    {day.businessHours && (
+                      <p className="text-[10px] text-muted-foreground mb-0.5">
+                        {day.businessHours.openTime}–{day.businessHours.closeTime}
+                      </p>
+                    )}
 
                     <div className="flex flex-col gap-0.5">
                       {day.shifts.map((shift) => (

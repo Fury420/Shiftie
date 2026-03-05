@@ -35,6 +35,7 @@ const employeeNav = [
 const adminNav = [
   { href: "/admin/employees", label: "Zamestnanci", icon: Users },
   { href: "/admin/schedule", label: "Správa zmien", icon: CalendarCog },
+  { href: "/admin/business-hours", label: "Otváracie hodiny", icon: Building2 },
   { href: "/admin/reports", label: "Reporty", icon: BarChart3 },
   { href: "/admin/wages", label: "Mzdy", icon: Banknote },
   { href: "/admin/leaves", label: "Dovolenky", icon: Umbrella },

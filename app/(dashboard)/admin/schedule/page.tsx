@@ -7,6 +7,7 @@ import { requireAdmin } from "@/lib/auth-guard"
 import { AdminMonthCalendar, type AdminCalendarDay, type AdminCalendarShift } from "@/components/schedule/admin-month-calendar"
 import { TemplatePanel } from "@/components/schedule/template-panel"
 import { getMonthGrid, toDateStr, formatMonthLabel, shortTime } from "@/lib/week"
+import { getBusinessHoursMapForRange } from "@/app/actions/business-hours"
 
 export default async function AdminSchedulePage({
   searchParams,
@@ -26,7 +27,7 @@ export default async function AdminSchedulePage({
   const firstOfMonth = `${monthStr}-01`
   const lastOfMonth = toDateStr(new Date(year, monthNum, 0, 12, 0, 0))
 
-  const [monthShifts, employees] = await Promise.all([
+  const [monthShifts, employees, businessHoursMap] = await Promise.all([
     db
       .select({
         id: shifts.id,
@@ -54,6 +55,8 @@ export default async function AdminSchedulePage({
       .from(user)
       .where(eq(user.organizationId, orgId))
       .orderBy(asc(user.name)),
+
+    getBusinessHoursMapForRange(orgId, startDate, endDate),
   ])
 
   const colorMap = new Map(employees.map((e) => [e.id, { name: e.name, color: e.color ?? "#6b7280" }]))
@@ -78,11 +81,13 @@ export default async function AdminSchedulePage({
           }
         })
 
+      const dayHours = businessHoursMap[dateStr]
       return {
         date: dateStr,
         isCurrentMonth: date.getMonth() === monthNum - 1,
         isToday: dateStr === todayStr,
         shifts: dayShifts,
+        businessHours: dayHours ?? null,
       }
     }),
   )
