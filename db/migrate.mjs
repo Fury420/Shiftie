@@ -38,6 +38,52 @@ await client`
   END $$
 `
 
+// ── business_hours table ───────────────────────────────────────────────────
+
+await client`
+  CREATE TABLE IF NOT EXISTS "business_hours" (
+    "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    "organization_id" uuid NOT NULL,
+    "day_of_week" text NOT NULL,
+    "open_time" time,
+    "close_time" time,
+    "is_closed" boolean NOT NULL DEFAULT true,
+    "created_at" timestamp NOT NULL DEFAULT now(),
+    "updated_at" timestamp NOT NULL DEFAULT now(),
+    UNIQUE("organization_id", "day_of_week")
+  )
+`
+
+await client`
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'business_hours_organization_id_organizations_id_fk') THEN
+      ALTER TABLE "business_hours" ADD CONSTRAINT "business_hours_organization_id_organizations_id_fk"
+      FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade;
+    END IF;
+  END $$
+`
+
+// ── license_type enum + organizations.license_type ─────────────────────────
+
+await client`
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'license_type') THEN
+      CREATE TYPE "public"."license_type" AS ENUM('free', 'basic', 'pro');
+    END IF;
+  END $$
+`
+
+await client`
+  DO $$ BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'organizations' AND column_name = 'license_type'
+    ) THEN
+      ALTER TABLE "organizations" ADD COLUMN "license_type" "license_type" NOT NULL DEFAULT 'free';
+    END IF;
+  END $$
+`
+
 // ── Migration 0004: organizations + superadmin role ────────────────────────
 
 // Add superadmin to role enum (IF NOT EXISTS workaround via DO block)
