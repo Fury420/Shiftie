@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, Plus, Send } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, Send, LayoutTemplate } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
@@ -12,7 +12,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { ShiftDialog, type ShiftForEdit, type EmployeeOption } from "./shift-dialog"
+import { TemplatePanel, type EmployeeTemplate } from "./template-panel"
 import { deleteShift, toggleShiftStatus, publishDraftShifts, approveShiftClaim, rejectShiftClaim, approveShiftRequest, rejectShiftRequest } from "@/app/actions/schedule"
 import { Check, X } from "lucide-react"
 import { toast } from "sonner"
@@ -72,6 +74,9 @@ interface AdminMonthCalendarProps {
   prevMonth: string
   nextMonth: string
   businessHours?: Map<string, BusinessHoursEntry>
+  templates: EmployeeTemplate[]
+  defaultFrom: string
+  defaultTo: string
 }
 
 const DAY_LABELS = ["Po", "Ut", "St", "Št", "Pi", "So", "Ne"]
@@ -83,6 +88,9 @@ export function AdminMonthCalendar({
   prevMonth,
   nextMonth,
   businessHours,
+  templates,
+  defaultFrom,
+  defaultTo,
 }: AdminMonthCalendarProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<ShiftForEdit | undefined>()
@@ -185,6 +193,22 @@ export function AdminMonthCalendar({
                 Publikovať všetky ({allDraftIds.length})
               </Button>
             )}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <LayoutTemplate className="size-4" />
+                  Šablóny
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>Šablóna zmien</SheetTitle>
+                </SheetHeader>
+                <div className="mt-4">
+                  <TemplatePanel employees={templates} defaultFrom={defaultFrom} defaultTo={defaultTo} />
+                </div>
+              </SheetContent>
+            </Sheet>
             <Button size="sm" onClick={() => openCreate()}>
               <Plus className="size-4" />
               Nová zmena

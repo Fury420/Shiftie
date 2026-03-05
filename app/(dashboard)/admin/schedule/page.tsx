@@ -5,7 +5,6 @@ import { shifts, user, businessHours, openShiftClaims } from "@/db/schema"
 import { eq, and, gte, lte, asc } from "drizzle-orm"
 import { requireAdmin } from "@/lib/auth-guard"
 import { AdminMonthCalendar, type AdminCalendarDay, type AdminCalendarShift, type AdminOpenShift, type AdminRequestedShift } from "@/components/schedule/admin-month-calendar"
-import { TemplatePanel } from "@/components/schedule/template-panel"
 import { getMonthGrid, toDateStr, formatMonthLabel, shortTime } from "@/lib/week"
 
 export default async function AdminSchedulePage({
@@ -164,14 +163,6 @@ export default async function AdminSchedulePage({
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl">
-      <h1 className="text-2xl font-semibold">Správa zmien</h1>
-
-      <TemplatePanel
-        employees={templates}
-        defaultFrom={firstOfMonth}
-        defaultTo={lastOfMonth}
-      />
-
       <AdminMonthCalendar
         weeks={calendarWeeks}
         employees={employeeOptions}
@@ -179,6 +170,9 @@ export default async function AdminSchedulePage({
         prevMonth={prevMonth}
         nextMonth={nextMonth}
         businessHours={bhMap}
+        templates={templates}
+        defaultFrom={firstOfMonth}
+        defaultTo={lastOfMonth}
       />
     </div>
   )

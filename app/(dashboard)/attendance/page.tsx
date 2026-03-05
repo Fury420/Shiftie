@@ -138,7 +138,7 @@ export default async function AttendancePage({
   const isCurrentMonth = year === now.getFullYear() && monthNum === now.getMonth() + 1
 
   return (
-    <div className="flex flex-col gap-6 max-w-3xl">
+    <div className="flex flex-col gap-6 max-w-3xl mx-auto w-full">
       <h1 className="text-2xl font-semibold">Dochádzka</h1>
 
       <ClockCard

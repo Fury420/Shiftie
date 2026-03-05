@@ -149,7 +149,7 @@ export default async function AdminWagesPage({
   })
 
   return (
-    <div className="flex flex-col gap-6 max-w-3xl">
+    <div className="flex flex-col gap-6 max-w-3xl mx-auto w-full">
       <div className="flex items-center justify-between">
         <StaffTabs />
         <div className="flex items-center gap-2">
