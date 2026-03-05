@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth"
 import { db } from "@/db"
-import { user } from "@/db/schema"
+import { user, userOrganizations } from "@/db/schema"
 import { eq, and } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { requireAdmin, getOrganizationId } from "@/lib/auth-guard"
@@ -39,6 +39,11 @@ export async function createEmployee(data: {
       hourlyRate: data.hourlyRate != null ? String(data.hourlyRate) : null,
     })
     .where(eq(user.email, data.email))
+
+  await db
+    .insert(userOrganizations)
+    .values({ userId: result.user.id, organizationId: orgId })
+    .onConflictDoNothing()
 
   revalidatePath("/admin/employees")
 }

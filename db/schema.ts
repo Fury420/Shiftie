@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, pgEnum, date, time, uuid, boolean, decimal } from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, pgEnum, date, time, uuid, boolean, decimal, unique } from "drizzle-orm/pg-core"
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
@@ -16,6 +16,42 @@ export const organizations = pgTable("organizations", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })
+
+// ─── Business hours (otváracie hodiny podniku) ────────────────────────────────
+// dayOfWeek: 0 = Ne, 1 = Po, …, 6 = So (konzistentné s defaultDays na user)
+export const businessHours = pgTable(
+  "business_hours",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    dayOfWeek: text("day_of_week").notNull(), // "0".."6"
+    openTime: time("open_time"),
+    closeTime: time("close_time"),
+    isClosed: boolean("is_closed").notNull().default(true),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [unique().on(t.organizationId, t.dayOfWeek)],
+)
+
+// ─── User ↔ Organization membership ──────────────────────────────────────────
+
+export const userOrganizations = pgTable(
+  "user_organizations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [unique().on(t.userId, t.organizationId)],
+)
 
 // ─── Better Auth tables ───────────────────────────────────────────────────────
 
