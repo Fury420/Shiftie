@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { updateOrganization } from "@/app/actions/organizations"
 
 interface OrgDetail {
@@ -15,6 +16,7 @@ interface OrgDetail {
   address: string | null
   phone: string | null
   email: string | null
+  licenseType: "free" | "basic" | "pro"
 }
 
 interface Props {
@@ -25,9 +27,13 @@ interface Props {
 export function EditOrgDialog({ org, onClose }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [licenseType, setLicenseType] = useState<"free" | "basic" | "pro">("free")
 
   useEffect(() => {
-    if (org) setError(null)
+    if (org) {
+      setError(null)
+      setLicenseType(org.licenseType)
+    }
   }, [org])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -44,6 +50,7 @@ export function EditOrgDialog({ org, onClose }: Props) {
         address: fd.get("address") as string,
         phone: fd.get("phone") as string,
         email: fd.get("email") as string,
+        licenseType,
       })
       onClose()
     } catch (err) {
@@ -84,6 +91,19 @@ export function EditOrgDialog({ org, onClose }: Props) {
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="email">Email</Label>
               <Input id="email" name="email" type="email" defaultValue={org.email ?? ""} placeholder="info@bar.sk" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Licencia</Label>
+              <Select value={licenseType} onValueChange={(v) => setLicenseType(v as "free" | "basic" | "pro")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="free">Free</SelectItem>
+                  <SelectItem value="basic">Basic</SelectItem>
+                  <SelectItem value="pro">Pro</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" disabled={loading}>

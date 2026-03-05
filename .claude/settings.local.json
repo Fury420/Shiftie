@@ -34,7 +34,9 @@
       "WebFetch(domain:api.github.com)",
       "Bash(find \"/Users/jan.dlhy/Projects/Fury420:Onshift/OnShift/app/\\(dashboard\\)/attendance\" -type f)",
       "Bash(cat \"/Users/jan.dlhy/Projects/Fury420:Onshift/OnShift/app/\\(dashboard\\)/attendance/page.tsx\")",
-      "Bash(./node_modules/.bin/next build:*)"
+      "Bash(./node_modules/.bin/next build:*)",
+      "Bash(find C:\\\\Users\\\\Boss\\\\Projekty\\\\OnShift\\\\OnShift\\\\app\\\\\\(dashboard\\)\\\\admin:*)",
+      "Bash(rm:*)"
     ]
   }
 }

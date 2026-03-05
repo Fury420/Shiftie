@@ -125,7 +125,7 @@ export async function deleteOrganization(id: string) {
 
 export async function updateOrganization(
   id: string,
-  data: { name: string; ico?: string; dic?: string; address?: string; phone?: string; email?: string },
+  data: { name: string; ico?: string; dic?: string; address?: string; phone?: string; email?: string; licenseType?: "free" | "basic" | "pro" },
 ) {
   await requireSuperAdmin()
 
@@ -138,6 +138,7 @@ export async function updateOrganization(
       address: data.address || null,
       phone: data.phone || null,
       email: data.email || null,
+      ...(data.licenseType && { licenseType: data.licenseType }),
       updatedAt: new Date(),
     })
     .where(eq(organizations.id, id))

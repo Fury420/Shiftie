@@ -19,6 +19,7 @@ export default async function SuperadminPage() {
       address: organizations.address,
       phone: organizations.phone,
       email: organizations.email,
+      licenseType: organizations.licenseType,
       createdAt: organizations.createdAt,
     })
     .from(organizations)
@@ -40,6 +41,7 @@ export default async function SuperadminPage() {
     address: o.address,
     phone: o.phone,
     email: o.email,
+    licenseType: o.licenseType,
     userCount: countMap.get(o.id) ?? 0,
     createdAt: new Date(o.createdAt).toLocaleDateString("sk-SK", {
       day: "numeric",

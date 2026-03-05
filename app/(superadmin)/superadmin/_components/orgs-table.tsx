@@ -2,12 +2,24 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Trash2, Pencil, LogIn } from "lucide-react"
 import { deleteOrganization, impersonateOrganization } from "@/app/actions/organizations"
 import { EditOrgDialog } from "./edit-org-dialog"
+
+const LICENSE_LABELS: Record<string, string> = {
+  free: "Free",
+  basic: "Basic",
+  pro: "Pro",
+}
+
+const LICENSE_VARIANTS: Record<string, "secondary" | "default" | "outline"> = {
+  free: "secondary",
+  basic: "outline",
+  pro: "default",
+}
 
 interface OrgRow {
   id: string
@@ -17,6 +29,7 @@ interface OrgRow {
   address: string | null
   phone: string | null
   email: string | null
+  licenseType: "free" | "basic" | "pro"
   userCount: number
   createdAt: string
 }
@@ -55,22 +68,28 @@ export function OrgsTable({ rows }: { rows: OrgRow[] }) {
           <TableRow>
             <TableHead>Názov</TableHead>
             <TableHead>IČO</TableHead>
-            <TableHead className="text-right">Používatelia</TableHead>
-            <TableHead>Vytvorená</TableHead>
+            <TableHead>DIČ</TableHead>
+            <TableHead>Adresa</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead className="text-right">Zamestnanci</TableHead>
+            <TableHead>Licencia</TableHead>
             <TableHead />
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.map((row) => (
             <TableRow key={row.id}>
-              <TableCell className="font-medium">
-                <Link href={`/superadmin/${row.id}`} className="hover:underline">
-                  {row.name}
-                </Link>
-              </TableCell>
+              <TableCell className="font-medium">{row.name}</TableCell>
               <TableCell className="text-muted-foreground">{row.ico ?? "—"}</TableCell>
+              <TableCell className="text-muted-foreground">{row.dic ?? "—"}</TableCell>
+              <TableCell className="text-muted-foreground max-w-[160px] truncate">{row.address ?? "—"}</TableCell>
+              <TableCell className="text-muted-foreground">{row.email ?? "—"}</TableCell>
               <TableCell className="text-right">{row.userCount}</TableCell>
-              <TableCell>{row.createdAt}</TableCell>
+              <TableCell>
+                <Badge variant={LICENSE_VARIANTS[row.licenseType]}>
+                  {LICENSE_LABELS[row.licenseType]}
+                </Badge>
+              </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-1">
                   <Button
