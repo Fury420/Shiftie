@@ -60,7 +60,7 @@ export default async function AdminZastupPage() {
   }))
 
   return (
-    <div className="flex flex-col gap-6 max-w-5xl">
+    <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
       <h1 className="text-2xl font-semibold">Žiadosti o zastup</h1>
       <AdminReplacementsTable requests={formatted} />
     </div>

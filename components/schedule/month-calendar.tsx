@@ -102,7 +102,7 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 max-w-5xl mx-auto w-full">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Kalendár</h1>
         <div className="flex items-center gap-2">

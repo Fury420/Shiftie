@@ -39,7 +39,7 @@ export default async function AdminSettingsPage() {
   })
 
   return (
-    <div className="flex flex-col gap-6 max-w-2xl">
+    <div className="flex flex-col gap-6 max-w-2xl mx-auto w-full">
       <div>
         <h1 className="text-2xl font-semibold">Nastavenia</h1>
         <p className="text-sm text-muted-foreground mt-1">Otváracie hodiny podniku</p>

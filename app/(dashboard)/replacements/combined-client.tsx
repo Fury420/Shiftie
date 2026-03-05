@@ -70,7 +70,7 @@ export function CombinedClient({
   const [replacementDialogOpen, setReplacementDialogOpen] = useState(false)
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl">
+    <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
       <h1 className="text-2xl font-semibold">Žiadosti</h1>
 
       {/* ── Voľno ─────────────────────────────────────────── */}
