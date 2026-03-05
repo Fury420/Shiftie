@@ -44,7 +44,6 @@ export default async function AdminLeavesPage() {
   return (
     <div className="flex flex-col gap-6">
       <StaffTabs />
-      <h1 className="text-2xl font-semibold">Dovolenky a voľno</h1>
       <AdminLeavesTable rows={rows} />
     </div>
   )

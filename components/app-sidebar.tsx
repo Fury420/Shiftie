@@ -36,8 +36,6 @@ const adminNav = [
   { href: "/admin/employees", label: "Zamestnanci", icon: Users },
   { href: "/admin/schedule", label: "Správa zmien", icon: CalendarCog },
   { href: "/admin/reports", label: "Reporty", icon: BarChart3 },
-  { href: "/admin/wages", label: "Mzdy", icon: Banknote },
-  { href: "/admin/leaves", label: "Dovolenky", icon: Umbrella },
   { href: "/admin/settings", label: "Nastavenia", icon: Settings2 },
 ]
 
@@ -116,17 +114,14 @@ export function AppSidebar({ user, orgs, activeOrgId, pendingReplacementCount }:
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="flex w-full items-center gap-3 rounded-lg border bg-card p-3 text-left transition-colors hover:bg-accent disabled:opacity-50"
+                  className="flex w-full items-center justify-center rounded-lg border bg-card p-3 transition-colors hover:bg-accent disabled:opacity-50"
                   disabled={isPending}
                 >
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    <Building2 className="size-4" />
-                  </div>
-                  <div className="flex min-w-0 flex-1 flex-col">
+                  <div className="flex min-w-0 flex-col items-center text-center">
                     <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Aktívna firma</span>
-                    <span className="truncate text-sm font-semibold text-foreground">{activeOrg.name}</span>
+                    <span className="truncate text-sm font-semibold text-foreground max-w-full">{activeOrg.name}</span>
                   </div>
-                  <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
+                  <ChevronsUpDown className="ml-2 size-4 shrink-0 text-muted-foreground" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" side="top" className="w-56">
@@ -144,13 +139,10 @@ export function AppSidebar({ user, orgs, activeOrgId, pendingReplacementCount }:
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <div className="flex w-full items-center gap-3 rounded-lg border bg-card p-3">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                <Building2 className="size-4" />
-              </div>
-              <div className="flex min-w-0 flex-1 flex-col">
+            <div className="flex w-full items-center justify-center rounded-lg border bg-card p-3">
+              <div className="flex min-w-0 flex-col items-center text-center">
                 <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Aktívna firma</span>
-                <span className="truncate text-sm font-semibold text-foreground">{activeOrg.name}</span>
+                <span className="truncate text-sm font-semibold text-foreground max-w-full">{activeOrg.name}</span>
               </div>
             </div>
           )}

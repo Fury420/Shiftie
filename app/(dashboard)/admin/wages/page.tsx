@@ -150,9 +150,8 @@ export default async function AdminWagesPage({
 
   return (
     <div className="flex flex-col gap-6 max-w-3xl">
-      <StaffTabs />
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Mzdy</h1>
+        <StaffTabs />
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" asChild>
             <Link href={`/admin/wages?month=${prevMonth}`}>

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { MoreHorizontal, Plus, UserCog, Archive, ArchiveRestore, Trash2 } from "lucide-react"
+import { StaffTabs } from "@/components/admin/staff-tabs"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -94,7 +95,7 @@ export function EmployeesTable({ employees, currentUserId }: EmployeesTableProps
   return (
     <>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Zamestnanci</h1>
+        <StaffTabs />
         <div className="flex items-center gap-2">
           <div className="flex rounded-md border p-0.5 gap-0.5">
             <Button
