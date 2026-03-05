@@ -3,7 +3,8 @@ import { pgTable, text, timestamp, pgEnum, date, time, uuid, boolean, decimal, u
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 export const roleEnum = pgEnum("role", ["superadmin", "admin", "employee"])
-export const shiftStatusEnum = pgEnum("shift_status", ["draft", "published"])
+export const shiftStatusEnum = pgEnum("shift_status", ["draft", "open", "published"])
+export const openShiftClaimStatusEnum = pgEnum("open_shift_claim_status", ["pending", "approved", "rejected"])
 export const leaveTypeEnum = pgEnum("leave_type", ["vacation", "sick", "personal"])
 export const leaveStatusEnum = pgEnum("leave_status", ["pending", "approved", "rejected"])
 export const replacementStatusEnum = pgEnum("replacement_status", ["pending", "accepted", "rejected"])
@@ -127,7 +128,6 @@ export const shifts = pgTable("shifts", {
     .notNull()
     .references(() => organizations.id, { onDelete: "cascade" }),
   userId: text("user_id")
-    .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   date: date("date").notNull(),
   startTime: time("start_time").notNull(),
@@ -169,6 +169,23 @@ export const leaves = pgTable("leaves", {
   status: leaveStatusEnum("status").notNull().default("pending"),
   note: text("note"),
   approvedBy: text("approved_by").references(() => user.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+export const openShiftClaims = pgTable("open_shift_claims", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  shiftId: uuid("shift_id")
+    .notNull()
+    .references(() => shifts.id, { onDelete: "cascade" }),
+  claimedByUserId: text("claimed_by_user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  status: openShiftClaimStatusEnum("status").notNull().default("pending"),
+  note: text("note"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })

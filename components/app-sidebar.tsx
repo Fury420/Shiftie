@@ -4,7 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTransition } from "react"
-import { Clock, Calendar, Users, CalendarCog, BarChart3, Banknote, Umbrella, ClipboardList, Building2, ChevronsUpDown, Check } from "lucide-react"
+import { Clock, Calendar, Users, CalendarCog, BarChart3, Banknote, Umbrella, ClipboardList, Building2, ChevronsUpDown, Check, Settings2 } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -38,6 +38,7 @@ const adminNav = [
   { href: "/admin/reports", label: "Reporty", icon: BarChart3 },
   { href: "/admin/wages", label: "Mzdy", icon: Banknote },
   { href: "/admin/leaves", label: "Dovolenky", icon: Umbrella },
+  { href: "/admin/settings", label: "Nastavenia", icon: Settings2 },
 ]
 
 interface AppSidebarProps {

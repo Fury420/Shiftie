@@ -50,6 +50,13 @@
       "when": 1772728451661,
       "tag": "0006_hot_stingray",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1772741780710,
+      "tag": "0007_even_mac_gargan",
+      "breakpoints": true
     }
   ]
 }

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Trash2, Pencil, LogIn } from "lucide-react"
@@ -62,7 +63,11 @@ export function OrgsTable({ rows }: { rows: OrgRow[] }) {
         <TableBody>
           {rows.map((row) => (
             <TableRow key={row.id}>
-              <TableCell className="font-medium">{row.name}</TableCell>
+              <TableCell className="font-medium">
+                <Link href={`/superadmin/${row.id}`} className="hover:underline">
+                  {row.name}
+                </Link>
+              </TableCell>
               <TableCell className="text-muted-foreground">{row.ico ?? "—"}</TableCell>
               <TableCell className="text-right">{row.userCount}</TableCell>
               <TableCell>{row.createdAt}</TableCell>

@@ -13,7 +13,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ShiftDialog, type ShiftForEdit, type EmployeeOption } from "./shift-dialog"
-import { deleteShift, toggleShiftStatus, publishDraftShifts } from "@/app/actions/schedule"
+import { deleteShift, toggleShiftStatus, publishDraftShifts, approveShiftClaim, rejectShiftClaim } from "@/app/actions/schedule"
+import { Check, X } from "lucide-react"
+import { toast } from "sonner"
 
 export interface AdminCalendarShift {
   id: string
@@ -23,8 +25,17 @@ export interface AdminCalendarShift {
   startTime: string
   endTime: string
   note: string | null
-  status: "draft" | "published"
+  status: "draft" | "open" | "published"
   color: string
+}
+
+export interface AdminOpenShift {
+  id: string
+  date: string
+  startTime: string
+  endTime: string
+  note: string | null
+  claims: { claimId: string; userId: string; userName: string; color: string }[]
 }
 
 export interface AdminCalendarDay {
@@ -32,6 +43,14 @@ export interface AdminCalendarDay {
   isCurrentMonth: boolean
   isToday: boolean
   shifts: AdminCalendarShift[]
+  openShifts: AdminOpenShift[]
+}
+
+export interface BusinessHoursEntry {
+  dayOfWeek: string
+  isClosed: boolean
+  openTime: string | null
+  closeTime: string | null
 }
 
 interface AdminMonthCalendarProps {
@@ -40,6 +59,7 @@ interface AdminMonthCalendarProps {
   monthLabel: string
   prevMonth: string
   nextMonth: string
+  businessHours?: Map<string, BusinessHoursEntry>
 }
 
 const DAY_LABELS = ["Po", "Ut", "St", "Št", "Pi", "So", "Ne"]
@@ -50,6 +70,7 @@ export function AdminMonthCalendar({
   monthLabel,
   prevMonth,
   nextMonth,
+  businessHours,
 }: AdminMonthCalendarProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<ShiftForEdit | undefined>()
@@ -82,6 +103,28 @@ export function AdminMonthCalendar({
 
   function handlePublishAll() {
     startTransition(() => publishDraftShifts(allDraftIds))
+  }
+
+  function handleApprove(claimId: string) {
+    startTransition(async () => {
+      try {
+        await approveShiftClaim(claimId)
+        toast.success("Zmena priradená")
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Chyba")
+      }
+    })
+  }
+
+  function handleReject(claimId: string) {
+    startTransition(async () => {
+      try {
+        await rejectShiftClaim(claimId)
+        toast.success("Prihlásenie zamietnuté")
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Chyba")
+      }
+    })
   }
 
   return (
@@ -148,7 +191,7 @@ export function AdminMonthCalendar({
                   </button>
                 </div>
 
-                {day.shifts.length === 0 ? (
+                {day.shifts.length === 0 && day.openShifts.length === 0 ? (
                   <p className="text-xs text-muted-foreground pl-10">Žiadne zmeny</p>
                 ) : (
                   <div className="flex flex-col gap-1.5 pl-10">
@@ -176,15 +219,56 @@ export function AdminMonthCalendar({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start">
                           <DropdownMenuItem onClick={() => openEdit(shift)}>Upraviť</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleToggle(shift.id, shift.status)} disabled={isPending}>
-                            {shift.status === "draft" ? "Publikovať" : "Zrušiť publikovanie"}
-                          </DropdownMenuItem>
+                          {shift.status !== "open" && (
+                            <DropdownMenuItem onClick={() => handleToggle(shift.id, shift.status as "draft" | "published")} disabled={isPending}>
+                              {shift.status === "draft" ? "Publikovať" : "Zrušiť publikovanie"}
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id)} disabled={isPending}>
                             Odstrániť
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                    ))}
+                    {day.openShifts.map((os) => (
+                      <div key={os.id} className="rounded-lg border border-dashed border-muted-foreground/30 px-3 py-2 flex flex-col gap-1.5 bg-muted/10">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-sm font-medium text-muted-foreground">Voľná zmena</div>
+                            <div className="text-xs text-muted-foreground/70">{os.startTime}–{os.endTime}</div>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="p-1 rounded hover:bg-muted">
+                                <Plus className="size-3.5 text-muted-foreground" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEdit({ id: os.id, userId: "", userName: "", date: os.date, startTime: os.startTime, endTime: os.endTime, note: os.note, status: "open", color: "" })}>Upraviť</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(os.id)} disabled={isPending}>Odstrániť</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                        {os.claims.length > 0 && (
+                          <div className="flex flex-col gap-1">
+                            {os.claims.map((claim) => (
+                              <div key={claim.claimId} className="flex items-center justify-between gap-2 rounded px-2 py-1" style={{ backgroundColor: claim.color + "18" }}>
+                                <span className="text-xs font-medium" style={{ color: claim.color }}>{claim.userName.split(" ")[0]} ⏳</span>
+                                <div className="flex gap-1">
+                                  <button onClick={() => handleApprove(claim.claimId)} disabled={isPending} className="p-0.5 rounded hover:bg-green-100 text-green-600">
+                                    <Check className="size-3.5" />
+                                  </button>
+                                  <button onClick={() => handleReject(claim.claimId)} disabled={isPending} className="p-0.5 rounded hover:bg-red-100 text-destructive">
+                                    <X className="size-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}
@@ -206,17 +290,87 @@ export function AdminMonthCalendar({
           {weeks.map((week, wi) => (
             <div key={wi} className={cn("grid grid-cols-7", wi < weeks.length - 1 && "border-b")}>
               {week.map((day) => {
-                const dayNum = new Date(day.date + "T12:00:00").getDate()
+                const dateObj = new Date(day.date + "T12:00:00")
+                const dayNum = dateObj.getDate()
+                const dow = String(dateObj.getDay())
+                const bh = businessHours?.get(dow)
+                const hasOpenHours = bh && !bh.isClosed && bh.openTime && bh.closeTime
+
+                const openShiftBlocks = day.openShifts.map((os) => (
+                  <div key={os.id} className="rounded border border-dashed border-muted-foreground/40 px-1 py-0.5 text-xs leading-tight bg-background">
+                    <div className="flex items-center justify-between gap-0.5">
+                      <span className="truncate text-muted-foreground font-medium text-[10px]">Voľná</span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="p-0.5 rounded hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Plus className="size-2.5 text-muted-foreground" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEdit({ id: os.id, userId: "", userName: "", date: os.date, startTime: os.startTime, endTime: os.endTime, note: os.note, status: "open", color: "" })}>Upraviť</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(os.id)} disabled={isPending}>Odstrániť</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <div className="opacity-60 text-[9px]">{os.startTime}–{os.endTime}</div>
+                    {os.claims.map((claim) => (
+                      <div key={claim.claimId} className="flex items-center gap-0.5 mt-0.5">
+                        <span className="truncate text-[9px] flex-1" style={{ color: claim.color }}>{claim.userName.split(" ")[0]} ⏳</span>
+                        <button onClick={() => handleApprove(claim.claimId)} disabled={isPending} className="text-green-600 hover:opacity-70 disabled:opacity-30">
+                          <Check className="size-2.5" />
+                        </button>
+                        <button onClick={() => handleReject(claim.claimId)} disabled={isPending} className="text-destructive hover:opacity-70 disabled:opacity-30">
+                          <X className="size-2.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ))
+
+                const shiftBlocks = day.shifts.map((shift) => (
+                  <DropdownMenu key={shift.id}>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className={cn(
+                          "w-full text-left rounded px-1 py-0.5 text-xs leading-tight hover:opacity-80 transition-opacity",
+                          shift.status === "draft" && "opacity-50",
+                        )}
+                        style={{
+                          backgroundColor: shift.color + "28",
+                          borderLeft: `2px ${shift.status === "draft" ? "dashed" : "solid"} ${shift.color}`,
+                          color: shift.color,
+                        }}
+                      >
+                        <div className="truncate font-medium">{shift.userName.split(" ")[0]}</div>
+                        <div className="opacity-80">{shift.startTime}–{shift.endTime}</div>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem onClick={() => openEdit(shift)}>Upraviť</DropdownMenuItem>
+                      {shift.status !== "open" && (
+                        <DropdownMenuItem onClick={() => handleToggle(shift.id, shift.status as "draft" | "published")} disabled={isPending}>
+                          {shift.status === "draft" ? "Publikovať" : "Zrušiť publikovanie"}
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id)} disabled={isPending}>
+                        Odstrániť
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ))
+
                 return (
                   <div
                     key={day.date}
                     className={cn(
-                      "min-h-16 p-1 border-r last:border-r-0 group",
+                      "min-h-20 p-1 border-r last:border-r-0 group",
                       !day.isCurrentMonth && "bg-muted/20",
                       day.isToday && "bg-primary/5",
                     )}
                   >
-                    <div className="flex items-center justify-between mb-0.5">
+                    <div className="flex items-center justify-between mb-1">
                       <div
                         className={cn(
                           "text-xs font-medium w-5 h-5 flex items-center justify-center rounded-full",
@@ -237,47 +391,17 @@ export function AdminMonthCalendar({
                       </button>
                     </div>
 
-                    <div className="flex flex-col gap-0.5">
-                      {day.shifts.map((shift) => (
-                        <DropdownMenu key={shift.id}>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              className={cn(
-                                "w-full text-left rounded px-1 py-0.5 text-xs leading-tight hover:opacity-80 transition-opacity",
-                                shift.status === "draft" && "opacity-50",
-                              )}
-                              style={{
-                                backgroundColor: shift.color + "28",
-                                borderLeft: `2px ${shift.status === "draft" ? "dashed" : "solid"} ${shift.color}`,
-                                color: shift.color,
-                              }}
-                            >
-                              <div className="truncate font-medium">{shift.userName.split(" ")[0]}</div>
-                              <div className="opacity-80">{shift.startTime}–{shift.endTime}</div>
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start">
-                            <DropdownMenuItem onClick={() => openEdit(shift)}>
-                              Upraviť
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleToggle(shift.id, shift.status)}
-                              disabled={isPending}
-                            >
-                              {shift.status === "draft" ? "Publikovať" : "Zrušiť publikovanie"}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => handleDelete(shift.id)}
-                              disabled={isPending}
-                            >
-                              Odstrániť
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      ))}
-                    </div>
+                    {hasOpenHours ? (
+                      <div className="rounded-md border border-dashed border-muted-foreground/25 bg-muted/10 px-1 pt-0.5 pb-1 flex flex-col gap-0.5 min-h-10">
+                        <div className="text-[9px] text-muted-foreground/50 leading-none mb-0.5 select-none">
+                          {bh.openTime!.slice(0, 5)}–{bh.closeTime!.slice(0, 5)}
+                        </div>
+                        {shiftBlocks}
+                        {openShiftBlocks}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-0.5">{shiftBlocks}{openShiftBlocks}</div>
+                    )}
                   </div>
                 )
               })}
