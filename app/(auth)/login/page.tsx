@@ -18,8 +18,10 @@ export default function LoginPage() {
     setError("")
     setLoading(true)
 
+    const resolvedEmail = email.includes("@") ? email : `${email}@shiftie.sk`
+
     const { error } = await signIn.email({
-      email,
+      email: resolvedEmail,
       password,
     })
 
