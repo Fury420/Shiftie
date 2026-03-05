@@ -111,19 +111,19 @@ export function AppSidebar({ user, orgs, activeOrgId, pendingReplacementCount }:
       </SidebarContent>
 
       {activeOrg && (
-        <SidebarFooter className="px-3 pb-3 pt-1">
+        <SidebarFooter className="px-3 pb-2 pt-0">
           {orgs.length > 1 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="flex w-full flex-col gap-0.5 rounded-lg border bg-muted/50 px-3 py-2.5 hover:bg-accent transition-colors disabled:opacity-50 text-left"
+                  className="flex w-full items-center justify-between px-2 py-1.5 hover:bg-accent rounded-md transition-colors disabled:opacity-50"
                   disabled={isPending}
                 >
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Aktívna firma</span>
-                  <span className="flex items-center justify-between gap-1.5 text-sm font-semibold">
-                    <span className="truncate">{activeOrg.name}</span>
-                    <ChevronsUpDown className="size-3.5 text-muted-foreground shrink-0" />
-                  </span>
+                  <div className="flex flex-col items-start gap-0.5">
+                    <span className="text-xs text-muted-foreground">Aktívna firma</span>
+                    <span className="text-sm font-medium truncate max-w-[150px]">{activeOrg.name}</span>
+                  </div>
+                  <ChevronsUpDown className="size-4 text-muted-foreground shrink-0" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" side="top" className="w-56">
@@ -141,9 +141,9 @@ export function AppSidebar({ user, orgs, activeOrgId, pendingReplacementCount }:
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <div className="flex flex-col gap-0.5 rounded-lg border bg-muted/50 px-3 py-2.5">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Aktívna firma</span>
-              <span className="text-sm font-semibold truncate">{activeOrg.name}</span>
+            <div className="flex flex-col gap-0.5 px-2 py-1.5">
+              <span className="text-xs text-muted-foreground">Aktívna firma</span>
+              <span className="text-sm font-medium truncate max-w-full">{activeOrg.name}</span>
             </div>
           )}
         </SidebarFooter>
