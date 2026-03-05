@@ -43,7 +43,7 @@ export default async function AdminEmployeesPage() {
   }))
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl">
+    <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
       <EmployeesTable employees={formatted} currentUserId={session.user.id} />
     </div>
   )
