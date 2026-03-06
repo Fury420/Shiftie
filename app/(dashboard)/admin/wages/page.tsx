@@ -149,22 +149,20 @@ export default async function AdminWagesPage({
   })
 
   return (
-    <div className="flex flex-col gap-6 max-w-3xl mx-auto w-full">
-      <div className="flex items-center justify-between">
-        <StaffTabs />
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" asChild>
-            <Link href={`/admin/wages?month=${prevMonth}`}>
-              <ChevronLeft className="size-4" />
-            </Link>
-          </Button>
-          <span className="text-sm font-medium min-w-36 text-center capitalize">{monthLabel}</span>
-          <Button variant="outline" size="icon" asChild>
-            <Link href={`/admin/wages?month=${nextMonth}`}>
-              <ChevronRight className="size-4" />
-            </Link>
-          </Button>
-        </div>
+    <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
+      <StaffTabs />
+      <div className="flex items-center justify-end gap-2">
+        <Button variant="outline" size="icon" asChild>
+          <Link href={`/admin/wages?month=${prevMonth}`}>
+            <ChevronLeft className="size-4" />
+          </Link>
+        </Button>
+        <span className="text-sm font-medium min-w-36 text-center capitalize">{monthLabel}</span>
+        <Button variant="outline" size="icon" asChild>
+          <Link href={`/admin/wages?month=${nextMonth}`}>
+            <ChevronRight className="size-4" />
+          </Link>
+        </Button>
       </div>
 
       <div className="flex flex-col gap-2">
