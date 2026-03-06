@@ -5,7 +5,6 @@ import { user } from "@/db/schema"
 import { asc, eq } from "drizzle-orm"
 import { requireAdmin } from "@/lib/auth-guard"
 import { EmployeesTable } from "@/components/employees/employees-table"
-import { StaffTabs } from "@/components/admin/staff-tabs"
 
 export default async function AdminEmployeesPage() {
   const session = await requireAdmin()
@@ -45,7 +44,6 @@ export default async function AdminEmployeesPage() {
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
-      <StaffTabs />
       <EmployeesTable employees={formatted} currentUserId={session.user.id} />
     </div>
   )
