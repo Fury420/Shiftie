@@ -57,6 +57,56 @@ export async function createShift(data: {
   revalidatePath("/schedule")
 }
 
+export async function createShiftsBatch(data: {
+  userId: string | null
+  dateFrom: string
+  dateTo: string
+  days: number[] // 0=Sun, 1=Mon, ..., 6=Sat
+  startTime: string
+  endTime: string
+  note?: string
+}) {
+  await requireAdmin()
+  const orgId = await getOrganizationId()
+
+  const [fy, fm, fd] = data.dateFrom.split("-").map(Number)
+  const [ty, tm, td] = data.dateTo.split("-").map(Number)
+  const from = new Date(fy, fm - 1, fd, 12, 0, 0)
+  const to = new Date(ty, tm - 1, td, 12, 0, 0)
+
+  let cur = new Date(from)
+  let created = 0
+  while (toDateStr(cur) <= toDateStr(to)) {
+    if (data.days.includes(cur.getDay())) {
+      const dateStr = toDateStr(cur)
+      if (data.userId) {
+        // Skip if conflict exists
+        try {
+          await checkConflict(data.userId, dateStr, data.startTime, data.endTime)
+        } catch {
+          cur = addDays(cur, 1)
+          continue
+        }
+      }
+      await db.insert(shifts).values({
+        organizationId: orgId,
+        userId: data.userId ?? null,
+        date: dateStr,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        note: data.note || null,
+        status: data.userId ? "draft" : "open",
+      })
+      created++
+    }
+    cur = addDays(cur, 1)
+  }
+
+  revalidatePath("/admin/schedule")
+  revalidatePath("/schedule")
+  return { created }
+}
+
 export async function updateShift(
   id: string,
   data: { userId: string | null; date: string; startTime: string; endTime: string; note?: string },

@@ -229,7 +229,7 @@ export function AdminMonthCalendar({
                   Šablóny
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl w-full max-h-[85vh]">
+              <DialogContent className="max-w-5xl w-full max-h-[85vh]">
                 <DialogHeader>
                   <DialogTitle>Šablóna zmien</DialogTitle>
                 </DialogHeader>
