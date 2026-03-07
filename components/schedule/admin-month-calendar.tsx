@@ -355,7 +355,7 @@ export function AdminMonthCalendar({
                           )}
                           <DropdownMenuSeparator />
                           {shift.isRule && (
-                            <DropdownMenuItem onClick={() => handleSkipInstance(shift.ruleId!, shift.date)} disabled={isPending}>Preskočiť túto zmenu</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleSkipInstance(shift.ruleId!, shift.date)} disabled={isPending} className="text-destructive">Odstrániť túto zmenu</DropdownMenuItem>
                           )}
                           {!(shift.isRule && shift.status === "published") && (
                             <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id, shift.isRule, shift.ruleId)} disabled={isPending}>
@@ -524,7 +524,7 @@ export function AdminMonthCalendar({
                       )}
                       <DropdownMenuSeparator />
                       {shift.isRule && (
-                        <DropdownMenuItem onClick={() => handleSkipInstance(shift.ruleId!, shift.date)} disabled={isPending}>Preskočiť túto zmenu</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleSkipInstance(shift.ruleId!, shift.date)} disabled={isPending} className="text-destructive">Odstrániť túto zmenu</DropdownMenuItem>
                       )}
                       {!(shift.isRule && shift.status === "published") && (
                         <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id, shift.isRule, shift.ruleId)} disabled={isPending}>
@@ -639,7 +639,7 @@ export function AdminMonthCalendar({
                             )}
                             <DropdownMenuSeparator />
                             {shift.isRule && (
-                              <DropdownMenuItem onClick={() => handleSkipInstance(shift.ruleId!, shift.date)} disabled={isPending}>Preskočiť túto zmenu</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleSkipInstance(shift.ruleId!, shift.date)} disabled={isPending} className="text-destructive">Odstrániť túto zmenu</DropdownMenuItem>
                             )}
                             {!(shift.isRule && shift.status === "published") && (
                               <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id, shift.isRule, shift.ruleId)} disabled={isPending}>{shift.isRule ? "Odstrániť pravidlo" : "Odstrániť"}</DropdownMenuItem>
