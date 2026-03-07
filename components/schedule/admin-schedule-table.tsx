@@ -65,9 +65,15 @@ export function AdminScheduleTable({
     setEditing({
       id: s.id,
       userId: s.userId,
+      frequency: "once",
       date: s.date,
+      days: null,
+      dayOfMonth: null,
+      validFrom: null,
+      validUntil: null,
       startTime: s.startTime,
       endTime: s.endTime,
+      allDay: false,
       note: s.note,
     })
     setDialogOpen(true)

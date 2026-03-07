@@ -1,0 +1,189 @@
+"use server"
+
+import { db } from "@/db"
+import { shiftRules, shiftExceptions } from "@/db/schema"
+import { eq, and } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
+import { requireAdmin, getOrganizationId } from "@/lib/auth-guard"
+
+function revalidateSchedule() {
+  revalidatePath("/admin/schedule")
+  revalidatePath("/schedule")
+}
+
+// ─── Create rule ─────────────────────────────────────────────────────────────
+
+export async function createShiftRule(data: {
+  userId: string | null
+  frequency: "once" | "weekly" | "monthly"
+  // once
+  date?: string
+  // weekly
+  days?: string
+  // monthly
+  dayOfMonth?: string
+  // recurring range
+  validFrom?: string
+  validUntil?: string
+  // time
+  startTime?: string
+  endTime?: string
+  allDay: boolean
+  note?: string
+}) {
+  await requireAdmin()
+  const orgId = await getOrganizationId()
+
+  await db.insert(shiftRules).values({
+    organizationId: orgId,
+    userId: data.userId ?? null,
+    frequency: data.frequency,
+    date: data.frequency === "once" ? (data.date ?? null) : null,
+    days: data.frequency === "weekly" ? (data.days ?? null) : null,
+    dayOfMonth: data.frequency === "monthly" ? (data.dayOfMonth ?? null) : null,
+    validFrom: data.frequency !== "once" ? (data.validFrom ?? null) : null,
+    validUntil: data.frequency !== "once" ? (data.validUntil ?? null) : null,
+    startTime: data.allDay ? null : (data.startTime ?? null),
+    endTime: data.allDay ? null : (data.endTime ?? null),
+    allDay: data.allDay,
+    note: data.note || null,
+    status: data.userId ? "draft" : "open",
+  })
+
+  revalidateSchedule()
+}
+
+// ─── Update rule ─────────────────────────────────────────────────────────────
+
+export async function updateShiftRule(
+  id: string,
+  data: {
+    userId?: string | null
+    frequency?: "once" | "weekly" | "monthly"
+    date?: string | null
+    days?: string | null
+    dayOfMonth?: string | null
+    validFrom?: string | null
+    validUntil?: string | null
+    startTime?: string | null
+    endTime?: string | null
+    allDay?: boolean
+    note?: string | null
+  },
+) {
+  await requireAdmin()
+  const orgId = await getOrganizationId()
+
+  await db
+    .update(shiftRules)
+    .set({ ...data, updatedAt: new Date() })
+    .where(and(eq(shiftRules.id, id), eq(shiftRules.organizationId, orgId)))
+
+  revalidateSchedule()
+}
+
+// ─── Delete rule (and all exceptions) ────────────────────────────────────────
+
+export async function deleteShiftRule(id: string) {
+  await requireAdmin()
+  const orgId = await getOrganizationId()
+
+  await db.delete(shiftRules).where(and(eq(shiftRules.id, id), eq(shiftRules.organizationId, orgId)))
+
+  revalidateSchedule()
+}
+
+// ─── Skip a single instance ──────────────────────────────────────────────────
+
+export async function skipRuleInstance(ruleId: string, date: string) {
+  await requireAdmin()
+
+  // Upsert: if exception already exists for this rule+date, update it
+  const [existing] = await db
+    .select({ id: shiftExceptions.id })
+    .from(shiftExceptions)
+    .where(and(eq(shiftExceptions.ruleId, ruleId), eq(shiftExceptions.date, date)))
+    .limit(1)
+
+  if (existing) {
+    await db
+      .update(shiftExceptions)
+      .set({ action: "skip" })
+      .where(eq(shiftExceptions.id, existing.id))
+  } else {
+    await db.insert(shiftExceptions).values({
+      ruleId,
+      date,
+      action: "skip",
+    })
+  }
+
+  revalidateSchedule()
+}
+
+// ─── Modify a single instance ────────────────────────────────────────────────
+
+export async function modifyRuleInstance(
+  ruleId: string,
+  date: string,
+  overrides: {
+    userId?: string | null
+    startTime?: string
+    endTime?: string
+    note?: string
+  },
+) {
+  await requireAdmin()
+
+  const [existing] = await db
+    .select({ id: shiftExceptions.id })
+    .from(shiftExceptions)
+    .where(and(eq(shiftExceptions.ruleId, ruleId), eq(shiftExceptions.date, date)))
+    .limit(1)
+
+  if (existing) {
+    await db
+      .update(shiftExceptions)
+      .set({ action: "modify", ...overrides })
+      .where(eq(shiftExceptions.id, existing.id))
+  } else {
+    await db.insert(shiftExceptions).values({
+      ruleId,
+      date,
+      action: "modify",
+      userId: overrides.userId ?? null,
+      startTime: overrides.startTime ?? null,
+      endTime: overrides.endTime ?? null,
+      note: overrides.note ?? null,
+    })
+  }
+
+  revalidateSchedule()
+}
+
+// ─── Remove exception (restore original instance) ────────────────────────────
+
+export async function removeException(exceptionId: string) {
+  await requireAdmin()
+
+  await db.delete(shiftExceptions).where(eq(shiftExceptions.id, exceptionId))
+
+  revalidateSchedule()
+}
+
+// ─── Publish / unpublish rule ────────────────────────────────────────────────
+
+export async function toggleShiftRuleStatus(id: string, currentStatus: "draft" | "published") {
+  await requireAdmin()
+  const orgId = await getOrganizationId()
+
+  await db
+    .update(shiftRules)
+    .set({
+      status: currentStatus === "draft" ? "published" : "draft",
+      updatedAt: new Date(),
+    })
+    .where(and(eq(shiftRules.id, id), eq(shiftRules.organizationId, orgId)))
+
+  revalidateSchedule()
+}

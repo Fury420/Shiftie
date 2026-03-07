@@ -1,11 +1,12 @@
 export const dynamic = "force-dynamic"
 
 import { db } from "@/db"
-import { shifts, user, businessHours, openShiftClaims } from "@/db/schema"
-import { eq, and, gte, lte, asc } from "drizzle-orm"
+import { shifts, user, businessHours, openShiftClaims, shiftRules, shiftExceptions } from "@/db/schema"
+import { eq, and, gte, lte, asc, or } from "drizzle-orm"
 import { requireAdmin } from "@/lib/auth-guard"
 import { AdminMonthCalendar, type AdminCalendarDay, type AdminCalendarShift, type AdminOpenShift, type AdminRequestedShift } from "@/components/schedule/admin-month-calendar"
 import { getMonthGrid, toDateStr, formatMonthLabel, shortTime } from "@/lib/week"
+import { expandRules, type ShiftRule, type ShiftException } from "@/lib/expand-rules"
 
 export default async function AdminSchedulePage({
   searchParams,
@@ -22,7 +23,7 @@ export default async function AdminSchedulePage({
   const endDate = toDateStr(weeks[weeks.length - 1][6])
   const todayStr = toDateStr(new Date())
 
-  const [monthShifts, requestedShifts, pendingClaims, employees, orgBusinessHours] = await Promise.all([
+  const [monthShifts, requestedShifts, pendingClaims, employees, orgBusinessHours, rules, exceptions] = await Promise.all([
     db
       .select({
         id: shifts.id,
@@ -68,19 +69,80 @@ export default async function AdminSchedulePage({
       .select()
       .from(businessHours)
       .where(eq(businessHours.organizationId, orgId)),
+
+    // Fetch shift rules that could overlap with the visible range
+    db
+      .select()
+      .from(shiftRules)
+      .where(
+        and(
+          eq(shiftRules.organizationId, orgId),
+          or(
+            // once: date in range
+            and(eq(shiftRules.frequency, "once"), gte(shiftRules.date, startDate), lte(shiftRules.date, endDate)),
+            // recurring: validFrom <= endDate AND validUntil >= startDate (overlap)
+            and(
+              or(eq(shiftRules.frequency, "weekly"), eq(shiftRules.frequency, "monthly")),
+              lte(shiftRules.validFrom, endDate),
+              gte(shiftRules.validUntil, startDate),
+            ),
+          ),
+        ),
+      ),
+
+    // Fetch exceptions for all rules in this org (filtered by date range)
+    db
+      .select()
+      .from(shiftExceptions)
+      .where(and(gte(shiftExceptions.date, startDate), lte(shiftExceptions.date, endDate))),
   ])
 
   const colorMap = new Map(employees.map((e) => [e.id, { name: e.name, color: e.color ?? "#6b7280" }]))
+  const bhMap = new Map(orgBusinessHours.map((r) => [r.dayOfWeek, r]))
+
+  // Expand rules into virtual instances
+  const ruleData: ShiftRule[] = rules.map((r) => ({
+    id: r.id,
+    organizationId: r.organizationId,
+    userId: r.userId,
+    frequency: r.frequency,
+    date: r.date,
+    days: r.days,
+    dayOfMonth: r.dayOfMonth,
+    validFrom: r.validFrom,
+    validUntil: r.validUntil,
+    startTime: r.startTime,
+    endTime: r.endTime,
+    allDay: r.allDay,
+    note: r.note,
+    status: r.status,
+  }))
+
+  const exData: ShiftException[] = exceptions.map((e) => ({
+    id: e.id,
+    ruleId: e.ruleId,
+    date: e.date,
+    action: e.action,
+    userId: e.userId,
+    startTime: e.startTime,
+    endTime: e.endTime,
+    note: e.note,
+  }))
+
+  const ruleInstances = expandRules(ruleData, exData, startDate, endDate, bhMap)
 
   const calendarWeeks: AdminCalendarDay[][] = weeks.map((week) =>
     week.map((date) => {
       const dateStr = toDateStr(date)
+
+      // Concrete shifts (legacy)
       const dayShifts: AdminCalendarShift[] = monthShifts
-        .filter((s) => s.date === dateStr && s.status !== "open")
+        .filter((s) => s.date === dateStr && s.status !== "open" && s.status !== "requested")
         .map((s) => {
           const emp = s.userId ? colorMap.get(s.userId) : undefined
           return {
             id: s.id,
+            ruleId: null,
             userId: s.userId ?? "",
             userName: emp?.name ?? "—",
             date: dateStr,
@@ -89,6 +151,28 @@ export default async function AdminSchedulePage({
             note: s.note,
             status: s.status,
             color: emp?.color ?? "#6b7280",
+            isRule: false,
+          }
+        })
+
+      // Rule-based instances
+      const ruleShifts: AdminCalendarShift[] = ruleInstances
+        .filter((ri) => ri.date === dateStr && ri.status !== "open")
+        .map((ri) => {
+          const emp = ri.userId ? colorMap.get(ri.userId) : undefined
+          return {
+            id: `rule:${ri.ruleId}:${dateStr}`,
+            ruleId: ri.ruleId,
+            userId: ri.userId ?? "",
+            userName: emp?.name ?? "—",
+            date: dateStr,
+            startTime: ri.startTime,
+            endTime: ri.endTime,
+            note: ri.note,
+            status: ri.status,
+            color: emp?.color ?? "#6b7280",
+            isRule: true,
+            exceptionId: ri.exceptionId,
           }
         })
 
@@ -108,28 +192,42 @@ export default async function AdminSchedulePage({
           }
         })
 
-      const dayOpenShifts: AdminOpenShift[] = monthShifts
-        .filter((s) => s.date === dateStr && s.status === "open")
-        .map((s) => {
-          const claimsForShift = pendingClaims.filter((c) => c.shiftId === s.id)
-          return {
-            id: s.id,
+      const dayOpenShifts: AdminOpenShift[] = [
+        // Legacy open shifts
+        ...monthShifts
+          .filter((s) => s.date === dateStr && s.status === "open")
+          .map((s) => {
+            const claimsForShift = pendingClaims.filter((c) => c.shiftId === s.id)
+            return {
+              id: s.id,
+              date: dateStr,
+              startTime: shortTime(s.startTime),
+              endTime: shortTime(s.endTime),
+              note: s.note,
+              claims: claimsForShift.map((c) => {
+                const emp = colorMap.get(c.claimedByUserId)
+                return { claimId: c.id, userId: c.claimedByUserId, userName: emp?.name ?? "—", color: emp?.color ?? "#6b7280" }
+              }),
+            }
+          }),
+        // Rule-based open shifts
+        ...ruleInstances
+          .filter((ri) => ri.date === dateStr && ri.status === "open")
+          .map((ri) => ({
+            id: `rule:${ri.ruleId}:${dateStr}`,
             date: dateStr,
-            startTime: shortTime(s.startTime),
-            endTime: shortTime(s.endTime),
-            note: s.note,
-            claims: claimsForShift.map((c) => {
-              const emp = colorMap.get(c.claimedByUserId)
-              return { claimId: c.id, userId: c.claimedByUserId, userName: emp?.name ?? "—", color: emp?.color ?? "#6b7280" }
-            }),
-          }
-        })
+            startTime: ri.startTime,
+            endTime: ri.endTime,
+            note: ri.note,
+            claims: [] as { claimId: string; userId: string; userName: string; color: string }[],
+          })),
+      ]
 
       return {
         date: dateStr,
         isCurrentMonth: date.getMonth() === monthNum - 1,
         isToday: dateStr === todayStr,
-        shifts: dayShifts,
+        shifts: [...dayShifts, ...ruleShifts],
         openShifts: dayOpenShifts,
         requestedShifts: dayRequestedShifts,
       }
@@ -140,8 +238,6 @@ export default async function AdminSchedulePage({
     monthNum === 1 ? `${year - 1}-12` : `${year}-${String(monthNum - 1).padStart(2, "0")}`
   const nextMonth =
     monthNum === 12 ? `${year + 1}-01` : `${year}-${String(monthNum + 1).padStart(2, "0")}`
-
-  const bhMap = new Map(orgBusinessHours.map((r) => [r.dayOfWeek, r]))
 
   const activeEmployees = employees.filter((e) => !e.archivedAt)
 

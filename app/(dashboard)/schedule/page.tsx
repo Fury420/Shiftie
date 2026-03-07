@@ -1,13 +1,14 @@
 export const dynamic = "force-dynamic"
 
 import { db } from "@/db"
-import { shifts, user, leaves, businessHours, openShiftClaims } from "@/db/schema"
-import { eq, and, gte, lte, asc } from "drizzle-orm"
+import { shifts, user, leaves, businessHours, openShiftClaims, shiftRules, shiftExceptions } from "@/db/schema"
+import { eq, and, gte, lte, asc, or } from "drizzle-orm"
 import { getSession } from "@/lib/session"
 import { getOrganizationId } from "@/lib/auth-guard"
 import { redirect } from "next/navigation"
 import { MonthCalendar, type CalendarDay, type CalendarShift, type OpenShift, type RequestedShift } from "@/components/schedule/month-calendar"
 import { getMonthGrid, toDateStr, formatMonthLabel, shortTime } from "@/lib/week"
+import { expandRules, type ShiftRule, type ShiftException } from "@/lib/expand-rules"
 
 export default async function SchedulePage({
   searchParams,
@@ -28,7 +29,7 @@ export default async function SchedulePage({
   const endDate = toDateStr(weeks[weeks.length - 1][6])
   const todayStr = toDateStr(new Date())
 
-  const [monthShifts, openMonthShifts, requestedShifts, pendingClaims, employees, approvedLeaves, orgBusinessHours] = await Promise.all([
+  const [monthShifts, openMonthShifts, requestedShifts, pendingClaims, employees, approvedLeaves, orgBusinessHours, rules, exceptions] = await Promise.all([
     db
       .select({
         id: shifts.id,
@@ -92,10 +93,48 @@ export default async function SchedulePage({
       .select()
       .from(businessHours)
       .where(eq(businessHours.organizationId, orgId)),
+
+    // Fetch published shift rules that overlap with visible range
+    db
+      .select()
+      .from(shiftRules)
+      .where(
+        and(
+          eq(shiftRules.organizationId, orgId),
+          eq(shiftRules.status, "published"),
+          or(
+            and(eq(shiftRules.frequency, "once"), gte(shiftRules.date, startDate), lte(shiftRules.date, endDate)),
+            and(
+              or(eq(shiftRules.frequency, "weekly"), eq(shiftRules.frequency, "monthly")),
+              lte(shiftRules.validFrom, endDate),
+              gte(shiftRules.validUntil, startDate),
+            ),
+          ),
+        ),
+      ),
+
+    db
+      .select()
+      .from(shiftExceptions)
+      .where(and(gte(shiftExceptions.date, startDate), lte(shiftExceptions.date, endDate))),
   ])
 
   const onLeave = (userId: string, date: string) =>
     approvedLeaves.some((l) => l.userId === userId && l.startDate <= date && l.endDate >= date)
+
+  const bhMap = new Map(orgBusinessHours.map((r) => [r.dayOfWeek, r]))
+
+  // Expand rules into virtual instances
+  const ruleData: ShiftRule[] = rules.map((r) => ({
+    id: r.id, organizationId: r.organizationId, userId: r.userId, frequency: r.frequency,
+    date: r.date, days: r.days, dayOfMonth: r.dayOfMonth, validFrom: r.validFrom, validUntil: r.validUntil,
+    startTime: r.startTime, endTime: r.endTime, allDay: r.allDay, note: r.note, status: r.status,
+  }))
+  const exData: ShiftException[] = exceptions.map((e) => ({
+    id: e.id, ruleId: e.ruleId, date: e.date, action: e.action,
+    userId: e.userId, startTime: e.startTime, endTime: e.endTime, note: e.note,
+  }))
+  const ruleInstances = expandRules(ruleData, exData, startDate, endDate, bhMap)
 
   const visibleShifts = monthShifts.filter((s) => !s.userId || !onLeave(s.userId, s.date))
 
@@ -111,7 +150,8 @@ export default async function SchedulePage({
   const calendarWeeks: CalendarDay[][] = weeks.map((week) =>
     week.map((date) => {
       const dateStr = toDateStr(date)
-      const dayShifts: CalendarShift[] = visibleShifts
+      // Legacy published shifts
+      const legacyShifts: CalendarShift[] = visibleShifts
         .filter((s) => s.date === dateStr)
         .map((s) => {
           const emp = s.userId ? colorMap.get(s.userId) : undefined
@@ -128,7 +168,27 @@ export default async function SchedulePage({
           }
         })
 
-      const dayOpenShifts: OpenShift[] = openMonthShifts
+      // Rule-based published shifts (non-open, with userId)
+      const ruleShifts: CalendarShift[] = ruleInstances
+        .filter((ri) => ri.date === dateStr && ri.status === "published" && ri.userId && !onLeave(ri.userId!, dateStr))
+        .map((ri) => {
+          const emp = ri.userId ? colorMap.get(ri.userId) : undefined
+          return {
+            id: `rule:${ri.ruleId}:${dateStr}`,
+            userId: ri.userId ?? "",
+            userName: emp?.name ?? "—",
+            startTime: ri.startTime,
+            endTime: ri.endTime,
+            note: ri.note,
+            color: emp?.color ?? "#6b7280",
+            isCurrentUser: ri.userId === session.user.id,
+            canRequest: isAdmin || ri.userId === session.user.id,
+          }
+        })
+
+      const dayShifts = [...legacyShifts, ...ruleShifts]
+
+      const legacyOpenShifts: OpenShift[] = openMonthShifts
         .filter((s) => s.date === dateStr)
         .map((s) => {
           const claimsForShift = pendingClaims.filter((c) => c.shiftId === s.id && c.status === "pending")
@@ -146,6 +206,20 @@ export default async function SchedulePage({
             iMayClaim: !myClaimId,
           }
         })
+
+      const ruleOpenShifts: OpenShift[] = ruleInstances
+        .filter((ri) => ri.date === dateStr && ri.status === "published" && !ri.userId)
+        .map((ri) => ({
+          id: `rule:${ri.ruleId}:${dateStr}`,
+          startTime: ri.startTime,
+          endTime: ri.endTime,
+          note: ri.note,
+          claimedByUsers: [],
+          myClaimId: null,
+          iMayClaim: true,
+        }))
+
+      const dayOpenShifts = [...legacyOpenShifts, ...ruleOpenShifts]
 
       const dayRequestedShifts: RequestedShift[] = requestedShifts
         .filter((s) => s.date === dateStr)
@@ -175,8 +249,6 @@ export default async function SchedulePage({
     monthNum === 12
       ? `${year + 1}-01`
       : `${year}-${String(monthNum + 1).padStart(2, "0")}`
-
-  const bhMap = new Map(orgBusinessHours.map((r) => [r.dayOfWeek, r]))
 
   return (
     <MonthCalendar

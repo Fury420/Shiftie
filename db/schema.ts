@@ -9,6 +9,8 @@ export const openShiftClaimStatusEnum = pgEnum("open_shift_claim_status", ["pend
 export const leaveTypeEnum = pgEnum("leave_type", ["vacation", "sick", "personal"])
 export const leaveStatusEnum = pgEnum("leave_status", ["pending", "approved", "rejected"])
 export const replacementStatusEnum = pgEnum("replacement_status", ["pending", "accepted", "rejected"])
+export const shiftRuleFrequencyEnum = pgEnum("shift_rule_frequency", ["once", "weekly", "monthly"])
+export const shiftExceptionActionEnum = pgEnum("shift_exception_action", ["skip", "modify"])
 
 // ─── Organizations ────────────────────────────────────────────────────────────
 
@@ -210,4 +212,55 @@ export const shiftReplacements = pgTable("shift_replacements", {
   note: text("note"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+// ─── Shift rules (pravidlá zmien — jednorazové aj opakujúce sa) ──────────────
+
+export const shiftRules = pgTable("shift_rules", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .references(() => user.id, { onDelete: "cascade" }),
+
+  frequency: shiftRuleFrequencyEnum("frequency").notNull(), // once | weekly | monthly
+
+  // "once" — single date
+  date: date("date"),
+
+  // "weekly" / "monthly" — recurrence config
+  days: text("days"),             // comma-separated day numbers: 0=Sun,1=Mon,...,6=Sat
+  dayOfMonth: text("day_of_month"), // for monthly: comma-separated day-of-month numbers (1-31)
+  validFrom: date("valid_from"),
+  validUntil: date("valid_until"),
+
+  // Time (nullable when allDay = true → uses business hours)
+  startTime: time("start_time"),
+  endTime: time("end_time"),
+  allDay: boolean("all_day").notNull().default(false),
+
+  note: text("note"),
+  status: shiftStatusEnum("status").notNull().default("draft"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+// ─── Shift exceptions (výnimky z pravidiel — preskočenie alebo úprava inštancie) ─
+
+export const shiftExceptions = pgTable("shift_exceptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  ruleId: uuid("rule_id")
+    .notNull()
+    .references(() => shiftRules.id, { onDelete: "cascade" }),
+  date: date("date").notNull(),
+  action: shiftExceptionActionEnum("action").notNull(), // skip | modify
+
+  // Override fields for "modify"
+  userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+  startTime: time("start_time"),
+  endTime: time("end_time"),
+  note: text("note"),
+
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 })

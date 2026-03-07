@@ -13,13 +13,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ShiftDialog, type ShiftForEdit, type EmployeeOption } from "./shift-dialog"
+import { ShiftDialog, type ShiftRuleForEdit, type EmployeeOption } from "./shift-dialog"
 import { deleteShift, toggleShiftStatus, publishDraftShifts, approveShiftClaim, rejectShiftClaim, approveShiftRequest, rejectShiftRequest } from "@/app/actions/schedule"
+import { deleteShiftRule, skipRuleInstance, toggleShiftRuleStatus } from "@/app/actions/shift-rules"
 import { Check, X } from "lucide-react"
 import { toast } from "sonner"
 
 export interface AdminCalendarShift {
   id: string
+  ruleId: string | null
   userId: string
   userName: string
   date: string
@@ -28,6 +30,8 @@ export interface AdminCalendarShift {
   note: string | null
   status: "requested" | "draft" | "open" | "published"
   color: string
+  isRule: boolean
+  exceptionId?: string
 }
 
 export interface AdminOpenShift {
@@ -93,7 +97,7 @@ export function AdminMonthCalendar({
     return idx >= 0 ? idx : 0
   })
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editing, setEditing] = useState<ShiftForEdit | undefined>()
+  const [editing, setEditing] = useState<ShiftRuleForEdit | undefined>()
   const [defaultDate, setDefaultDate] = useState<string | undefined>()
   const [isPending, startTransition] = useTransition()
 
@@ -115,8 +119,14 @@ export function AdminMonthCalendar({
   }
 
   const allDraftIds = weeks.flatMap((week) =>
-    week.flatMap((day) => day.shifts.filter((s) => s.status === "draft").map((s) => s.id)),
+    week.flatMap((day) => day.shifts.filter((s) => s.status === "draft" && !s.isRule).map((s) => s.id)),
   )
+
+  const allDraftRuleIds = [...new Set(
+    weeks.flatMap((week) =>
+      week.flatMap((day) => day.shifts.filter((s) => s.status === "draft" && s.isRule && s.ruleId).map((s) => s.ruleId!)),
+    ),
+  )]
 
   function openCreate(date?: string) {
     setEditing(undefined)
@@ -124,22 +134,72 @@ export function AdminMonthCalendar({
     setDialogOpen(true)
   }
 
-  function openEdit(s: AdminCalendarShift) {
-    setEditing({ id: s.id, userId: s.userId, date: s.date, startTime: s.startTime, endTime: s.endTime, note: s.note })
+  function openEditRule(s: AdminCalendarShift) {
+    if (s.isRule && s.ruleId) {
+      // For rule-based shifts, we'd need to fetch the full rule data
+      // For now, construct what we can from the instance
+      setEditing({
+        id: s.ruleId,
+        userId: s.userId,
+        frequency: "once", // Will be overridden by the dialog's fetch
+        date: s.date,
+        days: null,
+        dayOfMonth: null,
+        validFrom: null,
+        validUntil: null,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        allDay: false,
+        note: s.note,
+      })
+    } else {
+      // Legacy shift — open as "once" rule edit
+      setEditing({
+        id: s.id,
+        userId: s.userId,
+        frequency: "once",
+        date: s.date,
+        days: null,
+        dayOfMonth: null,
+        validFrom: null,
+        validUntil: null,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        allDay: false,
+        note: s.note,
+      })
+    }
     setDefaultDate(undefined)
     setDialogOpen(true)
   }
 
-  function handleDelete(id: string) {
-    startTransition(() => deleteShift(id))
+  function handleDelete(id: string, isRule: boolean, ruleId?: string | null) {
+    if (isRule && ruleId) {
+      startTransition(() => deleteShiftRule(ruleId))
+    } else {
+      startTransition(() => deleteShift(id))
+    }
   }
 
-  function handleToggle(id: string, status: "draft" | "published") {
-    startTransition(() => toggleShiftStatus(id, status))
+  function handleSkipInstance(ruleId: string, date: string) {
+    startTransition(() => skipRuleInstance(ruleId, date))
+  }
+
+  function handleToggle(id: string, status: "draft" | "published", isRule: boolean, ruleId?: string | null) {
+    if (isRule && ruleId) {
+      startTransition(() => toggleShiftRuleStatus(ruleId, status))
+    } else {
+      startTransition(() => toggleShiftStatus(id, status))
+    }
   }
 
   function handlePublishAll() {
-    startTransition(() => publishDraftShifts(allDraftIds))
+    startTransition(async () => {
+      if (allDraftIds.length > 0) await publishDraftShifts(allDraftIds)
+      for (const ruleId of allDraftRuleIds) {
+        await toggleShiftRuleStatus(ruleId, "draft")
+      }
+    })
   }
 
   function handleApproveRequest(shiftId: string) {
@@ -285,15 +345,15 @@ export function AdminMonthCalendar({
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start">
-                          <DropdownMenuItem onClick={() => openEdit(shift)}>Upraviť</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openEditRule(shift)}>{shift.isRule ? "Upraviť pravidlo" : "Upraviť"}</DropdownMenuItem>
                           {shift.status !== "open" && (
-                            <DropdownMenuItem onClick={() => handleToggle(shift.id, shift.status as "draft" | "published")} disabled={isPending}>
+                            <DropdownMenuItem onClick={() => handleToggle(shift.id, shift.status as "draft" | "published", shift.isRule, shift.ruleId)} disabled={isPending}>
                               {shift.status === "draft" ? "Publikovať" : "Zrušiť publikovanie"}
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id)} disabled={isPending}>
-                            Odstrániť
+                          <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id, shift.isRule, shift.ruleId)} disabled={isPending}>
+                            {shift.isRule ? "Zmazať pravidlo" : "Odstrániť"}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -312,9 +372,9 @@ export function AdminMonthCalendar({
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openEdit({ id: os.id, userId: "", userName: "", date: os.date, startTime: os.startTime, endTime: os.endTime, note: os.note, status: "open", color: "" })}>Upraviť</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openEditRule({ id: os.id, ruleId: null, userId: "", userName: "", date: os.date, startTime: os.startTime, endTime: os.endTime, note: os.note, status: "open", color: "", isRule: false })}>Upraviť</DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(os.id)} disabled={isPending}>Odstrániť</DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(os.id, false)} disabled={isPending}>Odstrániť</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -392,9 +452,9 @@ export function AdminMonthCalendar({
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit({ id: os.id, userId: "", userName: "", date: os.date, startTime: os.startTime, endTime: os.endTime, note: os.note, status: "open", color: "" })}>Upraviť</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openEditRule({ id: os.id, ruleId: null, userId: "", userName: "", date: os.date, startTime: os.startTime, endTime: os.endTime, note: os.note, status: "open", color: "", isRule: false })}>Upraviť</DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(os.id)} disabled={isPending}>Odstrániť</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(os.id, false)} disabled={isPending}>Odstrániť</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -447,15 +507,18 @@ export function AdminMonthCalendar({
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start">
-                      <DropdownMenuItem onClick={() => openEdit(shift)}>Upraviť</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openEditRule(shift)}>{shift.isRule ? "Upraviť pravidlo" : "Upraviť"}</DropdownMenuItem>
                       {shift.status !== "open" && (
-                        <DropdownMenuItem onClick={() => handleToggle(shift.id, shift.status as "draft" | "published")} disabled={isPending}>
+                        <DropdownMenuItem onClick={() => handleToggle(shift.id, shift.status as "draft" | "published", shift.isRule, shift.ruleId)} disabled={isPending}>
                           {shift.status === "draft" ? "Publikovať" : "Zrušiť publikovanie"}
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id)} disabled={isPending}>
-                        Odstrániť
+                      {shift.isRule && (
+                        <DropdownMenuItem onClick={() => handleSkipInstance(shift.ruleId!, shift.date)} disabled={isPending}>Preskočiť túto zmenu</DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id, shift.isRule, shift.ruleId)} disabled={isPending}>
+                        {shift.isRule ? "Odstrániť pravidlo" : "Odstrániť"}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -555,14 +618,17 @@ export function AdminMonthCalendar({
                             </button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="start">
-                            <DropdownMenuItem onClick={() => openEdit(shift)}>Upraviť</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEditRule(shift)}>{shift.isRule ? "Upraviť pravidlo" : "Upraviť"}</DropdownMenuItem>
                             {shift.status !== "open" && (
-                              <DropdownMenuItem onClick={() => handleToggle(shift.id, shift.status as "draft" | "published")} disabled={isPending}>
+                              <DropdownMenuItem onClick={() => handleToggle(shift.id, shift.status as "draft" | "published", shift.isRule, shift.ruleId)} disabled={isPending}>
                                 {shift.status === "draft" ? "Publikovať" : "Zrušiť publikovanie"}
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id)} disabled={isPending}>Odstrániť</DropdownMenuItem>
+                            {shift.isRule && (
+                              <DropdownMenuItem onClick={() => handleSkipInstance(shift.ruleId!, shift.date)} disabled={isPending}>Preskočiť túto zmenu</DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id, shift.isRule, shift.ruleId)} disabled={isPending}>{shift.isRule ? "Odstrániť pravidlo" : "Odstrániť"}</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       ))}

@@ -168,13 +168,13 @@ export default async function AdminWagesPage({
       </div>
 
       <div className="flex flex-col gap-2">
-        <h2 className="text-base font-semibold text-muted-foreground">Plánované mzdy (odhad)</h2>
-        <PlannedWagesTable rows={plannedRows} />
+        <h2 className="text-base font-semibold text-muted-foreground">Skutočné mzdy</h2>
+        <WagesTable rows={rows} />
       </div>
 
       <div className="flex flex-col gap-2">
-        <h2 className="text-base font-semibold text-muted-foreground">Skutočné mzdy</h2>
-        <WagesTable rows={rows} />
+        <h2 className="text-base font-semibold text-muted-foreground">Plánované mzdy (odhad)</h2>
+        <PlannedWagesTable rows={plannedRows} />
       </div>
     </div>
   )

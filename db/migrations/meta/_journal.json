@@ -64,6 +64,13 @@
       "when": 1772742978158,
       "tag": "0008_worthless_mystique",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1772846432475,
+      "tag": "0009_faulty_cassandra_nova",
+      "breakpoints": true
     }
   ]
 }
