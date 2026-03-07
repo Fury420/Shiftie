@@ -21,9 +21,6 @@ export default async function AdminSchedulePage({
   const startDate = toDateStr(weeks[0][0])
   const endDate = toDateStr(weeks[weeks.length - 1][6])
   const todayStr = toDateStr(new Date())
-  const monthStr = `${year}-${String(monthNum).padStart(2, "0")}`
-  const firstOfMonth = `${monthStr}-01`
-  const lastOfMonth = toDateStr(new Date(year, monthNum, 0, 12, 0, 0))
 
   const [monthShifts, requestedShifts, pendingClaims, employees, orgBusinessHours] = await Promise.all([
     db
@@ -62,9 +59,6 @@ export default async function AdminSchedulePage({
         name: user.name,
         color: user.color,
         archivedAt: user.archivedAt,
-        defaultDays: user.defaultDays,
-        defaultStartTime: user.defaultStartTime,
-        defaultEndTime: user.defaultEndTime,
       })
       .from(user)
       .where(eq(user.organizationId, orgId))
@@ -153,14 +147,6 @@ export default async function AdminSchedulePage({
 
   const employeeOptions = activeEmployees.map((e) => ({ id: e.id, name: e.name }))
 
-  const templates = activeEmployees.map((e) => ({
-    id: e.id,
-    name: e.name,
-    defaultDays: e.defaultDays ?? "",
-    defaultStartTime: e.defaultStartTime ? shortTime(e.defaultStartTime) : "",
-    defaultEndTime: e.defaultEndTime ? shortTime(e.defaultEndTime) : "",
-  }))
-
   return (
     <div className="flex flex-col gap-6 w-full">
       <AdminMonthCalendar
@@ -170,9 +156,6 @@ export default async function AdminSchedulePage({
         prevMonth={prevMonth}
         nextMonth={nextMonth}
         businessHours={bhMap}
-        templates={templates}
-        defaultFrom={firstOfMonth}
-        defaultTo={lastOfMonth}
       />
     </div>
   )

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, Plus, Send, LayoutTemplate } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
@@ -13,9 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ShiftDialog, type ShiftForEdit, type EmployeeOption } from "./shift-dialog"
-import { TemplatePanel, type EmployeeTemplate } from "./template-panel"
 import { deleteShift, toggleShiftStatus, publishDraftShifts, approveShiftClaim, rejectShiftClaim, approveShiftRequest, rejectShiftRequest } from "@/app/actions/schedule"
 import { Check, X } from "lucide-react"
 import { toast } from "sonner"
@@ -75,9 +73,6 @@ interface AdminMonthCalendarProps {
   prevMonth: string
   nextMonth: string
   businessHours?: Map<string, BusinessHoursEntry>
-  templates: EmployeeTemplate[]
-  defaultFrom: string
-  defaultTo: string
 }
 
 const DAY_LABELS = ["Po", "Ut", "St", "Št", "Pi", "So", "Ne"]
@@ -89,9 +84,6 @@ export function AdminMonthCalendar({
   prevMonth,
   nextMonth,
   businessHours,
-  templates,
-  defaultFrom,
-  defaultTo,
 }: AdminMonthCalendarProps) {
   const router = useRouter()
   const [view, setView] = useState<"month" | "week">("month")
@@ -222,20 +214,6 @@ export function AdminMonthCalendar({
                 Publikovať všetky ({allDraftIds.length})
               </Button>
             )}
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <LayoutTemplate className="size-4" />
-                  Šablóny
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-5xl w-full max-h-[85vh]">
-                <DialogHeader>
-                  <DialogTitle>Šablóna zmien</DialogTitle>
-                </DialogHeader>
-                <TemplatePanel employees={templates} defaultFrom={defaultFrom} defaultTo={defaultTo} />
-              </DialogContent>
-            </Dialog>
             <Button size="sm" onClick={() => openCreate()}>
               <Plus className="size-4" />
               Nová zmena

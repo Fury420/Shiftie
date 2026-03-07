@@ -244,8 +244,8 @@ export function ShiftDialog({ open, onOpenChange, employees, shift, defaultDate 
                     className={cn(
                       "flex-1 rounded-md border py-1.5 text-sm font-medium transition-colors",
                       selectedDays.includes(value)
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
+                        ? "bg-muted text-foreground border-border"
+                        : "bg-transparent text-muted-foreground/50 border-border/50 line-through hover:bg-muted/50"
                     )}
                   >
                     {label}
