@@ -12,6 +12,7 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN ls node_modules | head -20 && ls node_modules/date-fns/ | head -5 && ls node_modules/react-day-picker/ | head -5
 RUN npm run build
 
 # ── runner ────────────────────────────────────────────────────────────────────
