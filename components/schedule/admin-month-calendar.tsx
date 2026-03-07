@@ -631,10 +631,10 @@ export function AdminMonthCalendar({
           } else {
             startHour = 8; endHour = 22
           }
-          const totalMinutes = (endHour - startHour) * 60
-          const totalHeight = (endHour - startHour) * HOUR_HEIGHT
-          const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i)
-          const yPos = (time: string) => ((timeToMinutes(time) - startHour * 60) / totalMinutes) * totalHeight
+          const PAD = 20
+          const totalHeight = (endHour - startHour) * HOUR_HEIGHT + PAD * 2
+          const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i)
+          const yPos = (time: string) => PAD + ((timeToMinutes(time) - startHour * 60) / 60) * HOUR_HEIGHT
           const hPos = (start: string, end: string) => yPos(end) - yPos(start)
 
           return (
@@ -660,7 +660,7 @@ export function AdminMonthCalendar({
                 {/* Hour labels */}
                 <div className="relative border-r" style={{ height: totalHeight }}>
                   {hours.map((h) => (
-                    <div key={h} className="absolute right-2 -translate-y-1/2 text-[10px] text-muted-foreground/60 tabular-nums select-none" style={{ top: (h - startHour) * HOUR_HEIGHT }}>
+                    <div key={h} className="absolute right-2 -translate-y-1/2 text-[10px] text-muted-foreground/60 tabular-nums select-none" style={{ top: PAD + (h - startHour) * HOUR_HEIGHT }}>
                       {String(h).padStart(2, "0")}:00
                     </div>
                   ))}
@@ -689,7 +689,7 @@ export function AdminMonthCalendar({
                     >
                       {/* Hour grid lines */}
                       {hours.map((h) => (
-                        <div key={h} className="absolute left-0 right-0 border-t border-muted/40" style={{ top: (h - startHour) * HOUR_HEIGHT }} />
+                        <div key={h} className="absolute left-0 right-0 border-t border-muted/40" style={{ top: PAD + (h - startHour) * HOUR_HEIGHT }} />
                       ))}
 
                       {/* Shift blocks */}
