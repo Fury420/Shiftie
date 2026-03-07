@@ -39,7 +39,6 @@ export interface Employee {
   name: string
   email: string
   role: "superadmin" | "admin" | "employee"
-  defaultDays: string
   color: string
   hourlyRate: number | null
   isArchived: boolean
@@ -70,7 +69,7 @@ export function EmployeesTable({ employees, currentUserId }: EmployeesTableProps
   }
 
   function openEdit(emp: Employee) {
-    setEditing({ id: emp.id, name: emp.name, role: emp.role, defaultDays: emp.defaultDays, color: emp.color, hourlyRate: emp.hourlyRate })
+    setEditing({ id: emp.id, name: emp.name, role: emp.role, color: emp.color, hourlyRate: emp.hourlyRate })
     setDialogOpen(true)
   }
 
