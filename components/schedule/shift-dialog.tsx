@@ -37,12 +37,6 @@ const DAY_LABELS = [
   { value: 0, label: "Ne" },
 ]
 
-const MONTH_DAY_PRESETS = [
-  { label: "1.", value: 1 },
-  { label: "15.", value: 15 },
-  { label: "Posledný", value: -1 },
-]
-
 export interface ShiftRuleForEdit {
   id: string
   userId: string
@@ -78,16 +72,14 @@ export function ShiftDialog({ open, onOpenChange, employees, shift, defaultDate 
   const isEdit = !!shift
 
   const [userId, setUserId] = useState("")
-  const [frequency, setFrequency] = useState<"once" | "weekly" | "monthly">("once")
+  const [frequency, setFrequency] = useState<"once" | "weekly">("once")
   const [date, setDate] = useState("")
-  const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5])
-  const [selectedMonthDays, setSelectedMonthDays] = useState<number[]>([])
-  const [monthDayInput, setMonthDayInput] = useState("")
+  const [selectedDays, setSelectedDays] = useState<number[]>([])
   const [validFrom, setValidFrom] = useState("")
   const [validUntil, setValidUntil] = useState("")
   const [startTime, setStartTime] = useState("")
   const [endTime, setEndTime] = useState("")
-  const [allDay, setAllDay] = useState(false)
+  const [allDay, setAllDay] = useState(true)
   const [note, setNote] = useState("")
   const [error, setError] = useState("")
   const [isPending, startTransition] = useTransition()
@@ -96,11 +88,9 @@ export function ShiftDialog({ open, onOpenChange, employees, shift, defaultDate 
     if (open) {
       if (shift) {
         setUserId(shift.userId || OPEN_SHIFT_VALUE)
-        setFrequency(shift.frequency)
+        setFrequency(shift.frequency === "monthly" ? "weekly" : shift.frequency)
         setDate(shift.date ?? "")
-        setSelectedDays(shift.days ? shift.days.split(",").map(Number) : [1, 2, 3, 4, 5])
-        setSelectedMonthDays(shift.dayOfMonth ? shift.dayOfMonth.split(",").map(Number) : [])
-        setMonthDayInput("")
+        setSelectedDays(shift.days ? shift.days.split(",").map(Number) : [])
         setValidFrom(shift.validFrom ?? "")
         setValidUntil(shift.validUntil ?? "")
         setStartTime(shift.startTime?.slice(0, 5) ?? "")
@@ -111,14 +101,12 @@ export function ShiftDialog({ open, onOpenChange, employees, shift, defaultDate 
         setUserId(employees[0]?.id || OPEN_SHIFT_VALUE)
         setFrequency("once")
         setDate(defaultDate ?? "")
-        setSelectedDays([1, 2, 3, 4, 5])
-        setSelectedMonthDays([])
-        setMonthDayInput("")
+        setSelectedDays([])
         setValidFrom("")
         setValidUntil("")
         setStartTime("16:00")
         setEndTime("21:00")
-        setAllDay(false)
+        setAllDay(true)
         setNote("")
       }
       setError("")
@@ -131,31 +119,12 @@ export function ShiftDialog({ open, onOpenChange, employees, shift, defaultDate 
     )
   }
 
-  function toggleMonthDay(day: number) {
-    setSelectedMonthDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
-    )
-  }
-
-  function addMonthDay() {
-    const num = parseInt(monthDayInput)
-    if (isNaN(num) || num < 1 || num > 31) return
-    if (!selectedMonthDays.includes(num)) {
-      setSelectedMonthDays((prev) => [...prev, num].sort((a, b) => a - b))
-    }
-    setMonthDayInput("")
-  }
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
 
     if (frequency === "weekly" && selectedDays.length === 0) {
       setError("Vyberte aspoň jeden deň v týždni.")
-      return
-    }
-    if (frequency === "monthly" && selectedMonthDays.length === 0) {
-      setError("Vyberte aspoň jeden deň v mesiaci.")
       return
     }
 
@@ -169,7 +138,7 @@ export function ShiftDialog({ open, onOpenChange, employees, shift, defaultDate 
             frequency,
             date: frequency === "once" ? date : null,
             days: frequency === "weekly" ? selectedDays.join(",") : null,
-            dayOfMonth: frequency === "monthly" ? selectedMonthDays.join(",") : null,
+            dayOfMonth: null,
             validFrom: frequency !== "once" ? validFrom || null : null,
             validUntil: frequency !== "once" ? validUntil || null : null,
             startTime: allDay ? null : startTime,
@@ -183,7 +152,6 @@ export function ShiftDialog({ open, onOpenChange, employees, shift, defaultDate 
             frequency,
             date: frequency === "once" ? date : undefined,
             days: frequency === "weekly" ? selectedDays.join(",") : undefined,
-            dayOfMonth: frequency === "monthly" ? selectedMonthDays.join(",") : undefined,
             validFrom: frequency !== "once" ? validFrom || undefined : undefined,
             validUntil: frequency !== "once" ? validUntil || undefined : undefined,
             startTime: allDay ? undefined : startTime,
@@ -212,8 +180,7 @@ export function ShiftDialog({ open, onOpenChange, employees, shift, defaultDate 
             <Tabs value={frequency} onValueChange={(v) => setFrequency(v as typeof frequency)}>
               <TabsList className="w-full">
                 <TabsTrigger value="once" className="flex-1">Jednorazová</TabsTrigger>
-                <TabsTrigger value="weekly" className="flex-1">Týždenná</TabsTrigger>
-                <TabsTrigger value="monthly" className="flex-1">Mesačná</TabsTrigger>
+                <TabsTrigger value="weekly" className="flex-1">Opakujúca sa</TabsTrigger>
               </TabsList>
             </Tabs>
           )}
@@ -227,8 +194,7 @@ export function ShiftDialog({ open, onOpenChange, employees, shift, defaultDate 
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="once">Jednorazová</SelectItem>
-                  <SelectItem value="weekly">Týždenná</SelectItem>
-                  <SelectItem value="monthly">Mesačná</SelectItem>
+                  <SelectItem value="weekly">Opakujúca sa</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -292,80 +258,50 @@ export function ShiftDialog({ open, onOpenChange, employees, shift, defaultDate 
             </div>
           )}
 
-          {/* Days — monthly */}
-          {frequency === "monthly" && (
-            <div className="flex flex-col gap-1.5">
-              <Label>Dni v mesiaci</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {MONTH_DAY_PRESETS.map(({ label, value }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => toggleMonthDay(value)}
-                    className={cn(
-                      "rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
-                      selectedMonthDays.includes(value)
-                        ? "bg-muted text-foreground border-border"
-                        : "bg-transparent text-muted-foreground/50 border-border/50 hover:bg-muted/50",
-                    )}
-                  >
-                    {label}
-                  </button>
-                ))}
-                {selectedMonthDays
-                  .filter((d) => !MONTH_DAY_PRESETS.some((p) => p.value === d))
-                  .map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => toggleMonthDay(d)}
-                      className="rounded-md border bg-muted text-foreground border-border px-3 py-1.5 text-sm font-medium"
-                    >
-                      {d}.
-                    </button>
-                  ))}
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  min={1}
-                  max={31}
-                  value={monthDayInput}
-                  onChange={(e) => setMonthDayInput(e.target.value)}
-                  placeholder="Deň (1–31)"
-                  className="flex-1"
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMonthDay() } }}
-                />
-                <Button type="button" variant="outline" size="sm" onClick={addMonthDay}>
-                  Pridať
-                </Button>
-              </div>
-            </div>
-          )}
-
           {/* Valid from/until — recurring */}
           {frequency !== "once" && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="validFrom">Platí od</Label>
-                <Input
-                  id="validFrom"
-                  type="date"
-                  value={validFrom}
-                  onChange={(e) => setValidFrom(e.target.value)}
-                  required
-                />
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <Label>Obdobie</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => {
+                    const now = new Date()
+                    const y = now.getFullYear()
+                    const m = now.getMonth()
+                    setValidFrom(`${y}-${String(m + 1).padStart(2, "0")}-01`)
+                    const lastDay = new Date(y, m + 1, 0).getDate()
+                    setValidUntil(`${y}-${String(m + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`)
+                  }}
+                >
+                  Celý tento mesiac
+                </Button>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="validUntil">Platí do</Label>
-                <Input
-                  id="validUntil"
-                  type="date"
-                  value={validUntil}
-                  onChange={(e) => setValidUntil(e.target.value)}
-                  min={validFrom}
-                  required
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="validFrom">Od</Label>
+                  <Input
+                    id="validFrom"
+                    type="date"
+                    value={validFrom}
+                    onChange={(e) => setValidFrom(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="validUntil">Do</Label>
+                  <Input
+                    id="validUntil"
+                    type="date"
+                    value={validUntil}
+                    onChange={(e) => setValidUntil(e.target.value)}
+                    min={validFrom}
+                    required
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -378,7 +314,7 @@ export function ShiftDialog({ open, onOpenChange, employees, shift, defaultDate 
               onCheckedChange={(c) => setAllDay(c === true)}
             />
             <Label htmlFor="allDay" className="text-sm font-normal cursor-pointer">
-              Celý deň (podľa otváracích hodín)
+              Celý deň
             </Label>
           </div>
 

@@ -345,16 +345,23 @@ export function AdminMonthCalendar({
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start">
-                          <DropdownMenuItem onClick={() => openEditRule(shift)}>{shift.isRule ? "Upraviť pravidlo" : "Upraviť"}</DropdownMenuItem>
+                          {!(shift.isRule && shift.status === "published") && (
+                            <DropdownMenuItem onClick={() => openEditRule(shift)}>{shift.isRule ? "Upraviť pravidlo" : "Upraviť"}</DropdownMenuItem>
+                          )}
                           {shift.status !== "open" && (
                             <DropdownMenuItem onClick={() => handleToggle(shift.id, shift.status as "draft" | "published", shift.isRule, shift.ruleId)} disabled={isPending}>
                               {shift.status === "draft" ? "Publikovať" : "Zrušiť publikovanie"}
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id, shift.isRule, shift.ruleId)} disabled={isPending}>
-                            {shift.isRule ? "Zmazať pravidlo" : "Odstrániť"}
-                          </DropdownMenuItem>
+                          {shift.isRule && (
+                            <DropdownMenuItem onClick={() => handleSkipInstance(shift.ruleId!, shift.date)} disabled={isPending}>Preskočiť túto zmenu</DropdownMenuItem>
+                          )}
+                          {!(shift.isRule && shift.status === "published") && (
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id, shift.isRule, shift.ruleId)} disabled={isPending}>
+                              {shift.isRule ? "Zmazať pravidlo" : "Odstrániť"}
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     ))}
@@ -507,7 +514,9 @@ export function AdminMonthCalendar({
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start">
-                      <DropdownMenuItem onClick={() => openEditRule(shift)}>{shift.isRule ? "Upraviť pravidlo" : "Upraviť"}</DropdownMenuItem>
+                      {!(shift.isRule && shift.status === "published") && (
+                        <DropdownMenuItem onClick={() => openEditRule(shift)}>{shift.isRule ? "Upraviť pravidlo" : "Upraviť"}</DropdownMenuItem>
+                      )}
                       {shift.status !== "open" && (
                         <DropdownMenuItem onClick={() => handleToggle(shift.id, shift.status as "draft" | "published", shift.isRule, shift.ruleId)} disabled={isPending}>
                           {shift.status === "draft" ? "Publikovať" : "Zrušiť publikovanie"}
@@ -517,9 +526,11 @@ export function AdminMonthCalendar({
                       {shift.isRule && (
                         <DropdownMenuItem onClick={() => handleSkipInstance(shift.ruleId!, shift.date)} disabled={isPending}>Preskočiť túto zmenu</DropdownMenuItem>
                       )}
-                      <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id, shift.isRule, shift.ruleId)} disabled={isPending}>
-                        {shift.isRule ? "Odstrániť pravidlo" : "Odstrániť"}
-                      </DropdownMenuItem>
+                      {!(shift.isRule && shift.status === "published") && (
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id, shift.isRule, shift.ruleId)} disabled={isPending}>
+                          {shift.isRule ? "Odstrániť pravidlo" : "Odstrániť"}
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ))
@@ -618,7 +629,9 @@ export function AdminMonthCalendar({
                             </button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="start">
-                            <DropdownMenuItem onClick={() => openEditRule(shift)}>{shift.isRule ? "Upraviť pravidlo" : "Upraviť"}</DropdownMenuItem>
+                            {!(shift.isRule && shift.status === "published") && (
+                              <DropdownMenuItem onClick={() => openEditRule(shift)}>{shift.isRule ? "Upraviť pravidlo" : "Upraviť"}</DropdownMenuItem>
+                            )}
                             {shift.status !== "open" && (
                               <DropdownMenuItem onClick={() => handleToggle(shift.id, shift.status as "draft" | "published", shift.isRule, shift.ruleId)} disabled={isPending}>
                                 {shift.status === "draft" ? "Publikovať" : "Zrušiť publikovanie"}
@@ -628,7 +641,9 @@ export function AdminMonthCalendar({
                             {shift.isRule && (
                               <DropdownMenuItem onClick={() => handleSkipInstance(shift.ruleId!, shift.date)} disabled={isPending}>Preskočiť túto zmenu</DropdownMenuItem>
                             )}
-                            <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id, shift.isRule, shift.ruleId)} disabled={isPending}>{shift.isRule ? "Odstrániť pravidlo" : "Odstrániť"}</DropdownMenuItem>
+                            {!(shift.isRule && shift.status === "published") && (
+                              <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id, shift.isRule, shift.ruleId)} disabled={isPending}>{shift.isRule ? "Odstrániť pravidlo" : "Odstrániť"}</DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       ))}
