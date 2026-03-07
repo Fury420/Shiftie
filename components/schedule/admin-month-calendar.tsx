@@ -80,6 +80,28 @@ interface AdminMonthCalendarProps {
 }
 
 const DAY_LABELS = ["Po", "Ut", "St", "Št", "Pi", "So", "Ne"]
+const HOUR_HEIGHT = 56 // px per hour in timeline view
+
+function timeToMinutes(time: string): number {
+  const [h, m] = time.split(":").map(Number)
+  return h * 60 + m
+}
+
+function assignLanes<T extends { startTime: string; endTime: string }>(items: T[]): { item: T; lane: number; totalLanes: number }[] {
+  if (!items.length) return []
+  const indexed = items.map((item, i) => ({ item, i, start: timeToMinutes(item.startTime), end: timeToMinutes(item.endTime) }))
+  indexed.sort((a, b) => a.start - b.start || a.end - b.end)
+  const result: { lane: number }[] = new Array(items.length)
+  const laneEnds: number[] = []
+  for (const entry of indexed) {
+    let lane = laneEnds.findIndex(end => end <= entry.start)
+    if (lane === -1) { lane = laneEnds.length; laneEnds.push(entry.end) }
+    else { laneEnds[lane] = entry.end }
+    result[entry.i] = { lane }
+  }
+  const totalLanes = laneEnds.length
+  return items.map((item, i) => ({ item, lane: result[i].lane, totalLanes }))
+}
 
 export function AdminMonthCalendar({
   weeks,
@@ -589,101 +611,192 @@ export function AdminMonthCalendar({
           ))}
         </div>}
 
-        {/* ── Week view ──────────────────────────────────── */}
-        {view === "week" && (
-          <div className="rounded-xl border overflow-hidden">
-            <div className="grid grid-cols-7 bg-muted/50 border-b">
-              {currentWeek.map((day) => {
-                const dateObj = new Date(day.date + "T12:00:00")
-                return (
-                  <div key={day.date} className={cn("py-2 text-center border-r last:border-r-0", day.isToday && "bg-primary/10")}>
-                    <div className="text-xs font-medium text-muted-foreground">{DAY_LABELS[dateObj.getDay() === 0 ? 6 : dateObj.getDay() - 1]}</div>
-                    <div className={cn("mx-auto mt-0.5 size-7 rounded-full flex items-center justify-center text-sm font-semibold", day.isToday ? "bg-primary text-primary-foreground" : "text-foreground")}>
-                      {dateObj.getDate()}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-            <div className="grid grid-cols-7 min-h-64">
-              {currentWeek.map((day) => {
-                const dow = String(new Date(day.date + "T12:00:00").getDay())
-                const bh = businessHours?.get(dow)
-                const hasOpenHours = bh && !bh.isClosed && bh.openTime && bh.closeTime
-                return (
-                  <div key={day.date}
-                    className={cn("border-r last:border-r-0 p-1.5 flex flex-col gap-1 cursor-pointer", day.isToday && "bg-primary/5", !day.isCurrentMonth && "bg-muted/20")}
-                    onClick={() => openCreate(day.date)}>
-                    {hasOpenHours && (
-                      <div className="text-[10px] text-muted-foreground/50 select-none">{bh.openTime!.slice(0, 5)}–{bh.closeTime!.slice(0, 5)}</div>
-                    )}
-                    <div className="flex flex-col gap-1" onClick={(e) => e.stopPropagation()}>
-                      {day.shifts.map((shift) => (
-                        <DropdownMenu key={shift.id}>
-                          <DropdownMenuTrigger asChild>
-                            <button className={cn("w-full text-left rounded-lg px-2 py-1.5 text-xs hover:opacity-80 transition-opacity", shift.status === "draft" && "opacity-60")}
-                              style={{ backgroundColor: shift.color + "28", borderLeft: `3px ${shift.status === "draft" ? "dashed" : "solid"} ${shift.color}`, color: shift.color }}>
-                              <div className="font-semibold truncate">{shift.userName}</div>
-                              <div className="opacity-80">{shift.startTime}–{shift.endTime}{shift.status === "draft" && " · koncept"}</div>
-                              {shift.note && <div className="opacity-60 truncate mt-0.5">{shift.note}</div>}
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start">
-                            {!(shift.isRule && shift.status === "published") && (
-                              <DropdownMenuItem onClick={() => openEditRule(shift)}>{shift.isRule ? "Upraviť pravidlo" : "Upraviť"}</DropdownMenuItem>
-                            )}
-                            {shift.status !== "open" && (
-                              <DropdownMenuItem onClick={() => handleToggle(shift.id, shift.status as "draft" | "published", shift.isRule, shift.ruleId)} disabled={isPending}>
-                                {shift.status === "draft" ? "Publikovať" : "Zrušiť publikovanie"}
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuSeparator />
-                            {shift.isRule && (
-                              <DropdownMenuItem onClick={() => handleSkipInstance(shift.ruleId!, shift.date)} disabled={isPending} className="text-destructive">Odstrániť túto zmenu</DropdownMenuItem>
-                            )}
-                            {!(shift.isRule && shift.status === "published") && (
-                              <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id, shift.isRule, shift.ruleId)} disabled={isPending}>{shift.isRule ? "Odstrániť pravidlo" : "Odstrániť"}</DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      ))}
-                      {day.openShifts.map((os) => (
-                        <div key={os.id} className="rounded-lg border border-dashed border-muted-foreground/30 px-2 py-1.5 text-xs bg-muted/10">
-                          <div className="font-medium text-muted-foreground">Voľná zmena</div>
-                          <div className="text-muted-foreground/70">{os.startTime}–{os.endTime}</div>
-                          {os.claims.map((claim) => (
-                            <div key={claim.claimId} className="flex items-center justify-between gap-1 mt-1 rounded px-1.5 py-0.5" style={{ backgroundColor: claim.color + "18" }}>
-                              <span className="text-xs font-medium truncate" style={{ color: claim.color }}>{claim.userName.split(" ")[0]} ⏳</span>
-                              <div className="flex gap-0.5 shrink-0">
-                                <button onClick={() => handleApprove(claim.claimId)} disabled={isPending} className="text-green-600 hover:opacity-70"><Check className="size-3" /></button>
-                                <button onClick={() => handleReject(claim.claimId)} disabled={isPending} className="text-destructive hover:opacity-70"><X className="size-3" /></button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                      {day.requestedShifts.map((rs) => (
-                        <div key={rs.id} className="rounded-lg border border-dashed border-amber-400/60 px-2 py-1.5 text-xs bg-amber-50/50 dark:bg-amber-950/20">
-                          <div className="font-medium truncate" style={{ color: rs.color }}>{rs.userName} — požiadavka</div>
-                          <div className="text-muted-foreground">{rs.startTime}–{rs.endTime}</div>
-                          <div className="flex gap-1 mt-1">
-                            <button onClick={() => handleApproveRequest(rs.id)} disabled={isPending} className="text-green-600 hover:opacity-70"><Check className="size-3.5" /></button>
-                            <button onClick={() => handleRejectRequest(rs.id)} disabled={isPending} className="text-destructive hover:opacity-70"><X className="size-3.5" /></button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {!day.shifts.length && !day.openShifts.length && !day.requestedShifts.length && (
-                      <div className="flex items-center justify-center text-muted-foreground/30 mt-2">
-                        <Plus className="size-4" />
+        {/* ── Week view (timeline) ─────────────────────── */}
+        {view === "week" && (() => {
+          const allEntries = currentWeek.flatMap(d => [
+            ...d.shifts.map(s => ({ start: s.startTime, end: s.endTime })),
+            ...d.openShifts.map(s => ({ start: s.startTime, end: s.endTime })),
+            ...d.requestedShifts.map(s => ({ start: s.startTime, end: s.endTime })),
+          ])
+          currentWeek.forEach(day => {
+            const dow = String(new Date(day.date + "T12:00:00").getDay())
+            const bh = businessHours?.get(dow)
+            if (bh && !bh.isClosed && bh.openTime && bh.closeTime)
+              allEntries.push({ start: bh.openTime, end: bh.closeTime })
+          })
+          let startHour = 8, endHour = 22
+          if (allEntries.length > 0) {
+            startHour = Math.min(startHour, ...allEntries.map(e => Math.floor(timeToMinutes(e.start) / 60)))
+            endHour = Math.max(endHour, ...allEntries.map(e => Math.ceil(timeToMinutes(e.end) / 60)))
+          }
+          const totalMinutes = (endHour - startHour) * 60
+          const totalHeight = (endHour - startHour) * HOUR_HEIGHT
+          const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i)
+          const yPos = (time: string) => ((timeToMinutes(time) - startHour * 60) / totalMinutes) * totalHeight
+          const hPos = (start: string, end: string) => yPos(end) - yPos(start)
+
+          return (
+            <div className="rounded-xl border overflow-hidden">
+              {/* Header */}
+              <div className="grid grid-cols-[48px_repeat(7,1fr)] bg-muted/50 border-b">
+                <div />
+                {currentWeek.map((day) => {
+                  const dateObj = new Date(day.date + "T12:00:00")
+                  return (
+                    <div key={day.date} className={cn("py-2 text-center border-l", day.isToday && "bg-primary/10")}>
+                      <div className="text-xs font-medium text-muted-foreground">{DAY_LABELS[dateObj.getDay() === 0 ? 6 : dateObj.getDay() - 1]}</div>
+                      <div className={cn("mx-auto mt-0.5 size-7 rounded-full flex items-center justify-center text-sm font-semibold", day.isToday ? "bg-primary text-primary-foreground" : "text-foreground")}>
+                        {dateObj.getDate()}
                       </div>
-                    )}
-                  </div>
-                )
-              })}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Timeline body */}
+              <div className="grid grid-cols-[48px_repeat(7,1fr)] overflow-y-auto" style={{ maxHeight: "70vh" }}>
+                {/* Hour labels */}
+                <div className="relative border-r" style={{ height: totalHeight }}>
+                  {hours.map((h) => (
+                    <div key={h} className="absolute right-2 -translate-y-1/2 text-[10px] text-muted-foreground/60 tabular-nums select-none" style={{ top: (h - startHour) * HOUR_HEIGHT }}>
+                      {String(h).padStart(2, "0")}:00
+                    </div>
+                  ))}
+                </div>
+
+                {/* Day columns */}
+                {currentWeek.map((day) => {
+                  type TaggedShift = AdminCalendarShift & { _type: "shift" }
+                  type TaggedOpen = AdminOpenShift & { _type: "open" }
+                  type TaggedReq = AdminRequestedShift & { _type: "requested" }
+                  type TaggedItem = TaggedShift | TaggedOpen | TaggedReq
+
+                  const allItems: TaggedItem[] = [
+                    ...day.shifts.map(s => ({ ...s, _type: "shift" as const })),
+                    ...day.openShifts.map(s => ({ ...s, _type: "open" as const })),
+                    ...day.requestedShifts.map(s => ({ ...s, _type: "requested" as const })),
+                  ]
+                  const lanes = assignLanes(allItems)
+
+                  return (
+                    <div
+                      key={day.date}
+                      className={cn("relative border-l cursor-pointer", day.isToday && "bg-primary/5", !day.isCurrentMonth && "bg-muted/20")}
+                      style={{ height: totalHeight }}
+                      onClick={() => openCreate(day.date)}
+                    >
+                      {/* Hour grid lines */}
+                      {hours.map((h) => (
+                        <div key={h} className="absolute left-0 right-0 border-t border-muted/40" style={{ top: (h - startHour) * HOUR_HEIGHT }} />
+                      ))}
+
+                      {/* Shift blocks */}
+                      <div className="absolute inset-0" onClick={(e) => e.stopPropagation()}>
+                        {lanes.map(({ item, lane, totalLanes }) => {
+                          const top = yPos(item.startTime)
+                          const height = Math.max(hPos(item.startTime, item.endTime), 24)
+                          const widthPct = 100 / totalLanes
+                          const leftPct = (lane / totalLanes) * 100
+
+                          if (item._type === "shift") {
+                            const shift = item
+                            return (
+                              <DropdownMenu key={shift.id}>
+                                <DropdownMenuTrigger asChild>
+                                  <button
+                                    className={cn(
+                                      "absolute rounded-md px-1.5 py-0.5 text-xs text-left hover:opacity-80 transition-opacity overflow-hidden",
+                                      shift.status === "draft" && "opacity-60",
+                                    )}
+                                    style={{
+                                      top, height, width: `calc(${widthPct}% - 4px)`, left: `calc(${leftPct}% + 2px)`,
+                                      backgroundColor: shift.color + "30",
+                                      borderLeft: `3px ${shift.status === "draft" ? "dashed" : "solid"} ${shift.color}`,
+                                      color: shift.color,
+                                    }}
+                                  >
+                                    <div className="font-semibold truncate leading-tight">{shift.userName}</div>
+                                    <div className="opacity-80 leading-tight text-[10px]">
+                                      {shift.startTime}–{shift.endTime}
+                                      {shift.status === "draft" && " · koncept"}
+                                    </div>
+                                    {shift.note && height > 48 && (
+                                      <div className="opacity-60 truncate mt-0.5 text-[10px]">{shift.note}</div>
+                                    )}
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start">
+                                  {!(shift.isRule && shift.status === "published") && (
+                                    <DropdownMenuItem onClick={() => openEditRule(shift)}>{shift.isRule ? "Upraviť pravidlo" : "Upraviť"}</DropdownMenuItem>
+                                  )}
+                                  {shift.status !== "open" && (
+                                    <DropdownMenuItem onClick={() => handleToggle(shift.id, shift.status as "draft" | "published", shift.isRule, shift.ruleId)} disabled={isPending}>
+                                      {shift.status === "draft" ? "Publikovať" : "Zrušiť publikovanie"}
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuSeparator />
+                                  {shift.isRule && (
+                                    <DropdownMenuItem onClick={() => handleSkipInstance(shift.ruleId!, shift.date)} disabled={isPending} className="text-destructive">Odstrániť túto zmenu</DropdownMenuItem>
+                                  )}
+                                  {!(shift.isRule && shift.status === "published") && (
+                                    <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(shift.id, shift.isRule, shift.ruleId)} disabled={isPending}>{shift.isRule ? "Odstrániť pravidlo" : "Odstrániť"}</DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )
+                          }
+
+                          if (item._type === "open") {
+                            const os = item
+                            return (
+                              <div
+                                key={os.id}
+                                className="absolute rounded-md border border-dashed border-muted-foreground/30 px-1.5 py-0.5 text-xs bg-muted/10 overflow-hidden"
+                                style={{ top, height, width: `calc(${widthPct}% - 4px)`, left: `calc(${leftPct}% + 2px)` }}
+                              >
+                                <div className="font-medium text-muted-foreground leading-tight">Voľná</div>
+                                <div className="text-muted-foreground/70 text-[10px] leading-tight">{os.startTime}–{os.endTime}</div>
+                                {os.claims.map((claim) => (
+                                  <div key={claim.claimId} className="flex items-center justify-between gap-0.5 mt-0.5 rounded px-1 py-0.5" style={{ backgroundColor: claim.color + "18" }}>
+                                    <span className="text-[10px] font-medium truncate" style={{ color: claim.color }}>{claim.userName.split(" ")[0]} ⏳</span>
+                                    <div className="flex gap-0.5 shrink-0">
+                                      <button onClick={() => handleApprove(claim.claimId)} disabled={isPending} className="text-green-600 hover:opacity-70"><Check className="size-3" /></button>
+                                      <button onClick={() => handleReject(claim.claimId)} disabled={isPending} className="text-destructive hover:opacity-70"><X className="size-3" /></button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )
+                          }
+
+                          if (item._type === "requested") {
+                            const rs = item
+                            return (
+                              <div
+                                key={rs.id}
+                                className="absolute rounded-md border border-dashed border-amber-400/60 px-1.5 py-0.5 text-xs bg-amber-50/50 dark:bg-amber-950/20 overflow-hidden"
+                                style={{ top, height, width: `calc(${widthPct}% - 4px)`, left: `calc(${leftPct}% + 2px)` }}
+                              >
+                                <div className="font-medium truncate leading-tight" style={{ color: rs.color }}>{rs.userName.split(" ")[0]} ⏳</div>
+                                <div className="text-muted-foreground text-[10px] leading-tight">{rs.startTime}–{rs.endTime}</div>
+                                <div className="flex gap-0.5 mt-0.5">
+                                  <button onClick={() => handleApproveRequest(rs.id)} disabled={isPending} className="text-green-600 hover:opacity-70"><Check className="size-3" /></button>
+                                  <button onClick={() => handleRejectRequest(rs.id)} disabled={isPending} className="text-destructive hover:opacity-70"><X className="size-3" /></button>
+                                </div>
+                              </div>
+                            )
+                          }
+
+                          return null
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )
+        })()}
       </div>
 
       <ShiftDialog
