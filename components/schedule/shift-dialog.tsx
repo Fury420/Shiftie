@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { createShift, createShiftsBatch, updateShift } from "@/app/actions/schedule"
+import { createShiftsBatch, updateShift } from "@/app/actions/schedule"
 import { cn } from "@/lib/utils"
 
 // "__open__" = voľná zmena (žiadny zamestnanec)
@@ -123,11 +123,7 @@ export function ShiftDialog({ open, onOpenChange, employees, shift, defaultDate 
       try {
         if (isEdit) {
           await updateShift(shift.id, { userId: resolvedUserId, date: dateFrom, startTime, endTime, note })
-        } else if (dateFrom === dateTo) {
-          // Single date — use original createShift
-          await createShift({ userId: resolvedUserId, date: dateFrom, startTime, endTime, note })
         } else {
-          // Date range — batch create
           await createShiftsBatch({
             userId: resolvedUserId,
             dateFrom,
