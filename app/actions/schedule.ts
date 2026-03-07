@@ -62,12 +62,15 @@ export async function createShiftsBatch(data: {
   dateFrom: string
   dateTo: string
   days: number[] // 0=Sun, 1=Mon, ..., 6=Sat
+  excludeDates?: string[] // dates to skip (YYYY-MM-DD)
   startTime: string
   endTime: string
   note?: string
 }) {
   await requireAdmin()
   const orgId = await getOrganizationId()
+
+  const excluded = new Set(data.excludeDates ?? [])
 
   const [fy, fm, fd] = data.dateFrom.split("-").map(Number)
   const [ty, tm, td] = data.dateTo.split("-").map(Number)
@@ -79,6 +82,10 @@ export async function createShiftsBatch(data: {
   while (toDateStr(cur) <= toDateStr(to)) {
     if (data.days.includes(cur.getDay())) {
       const dateStr = toDateStr(cur)
+      if (excluded.has(dateStr)) {
+        cur = addDays(cur, 1)
+        continue
+      }
       if (data.userId) {
         // Skip if conflict exists
         try {
