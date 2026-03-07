@@ -1,6 +1,9 @@
 "use client"
 
 import { useState, useEffect, useTransition } from "react"
+import { format } from "date-fns"
+import { sk } from "date-fns/locale"
+import { CalendarIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -11,7 +14,6 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
@@ -21,6 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { createShiftRule, updateShiftRule } from "@/app/actions/shift-rules"
 import { cn } from "@/lib/utils"
 
@@ -66,6 +70,48 @@ interface ShiftDialogProps {
   employees: EmployeeOption[]
   shift?: ShiftRuleForEdit
   defaultDate?: string
+}
+
+function toDateStr(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${y}-${m}-${day}`
+}
+
+function parseDate(s: string): Date | undefined {
+  if (!s) return undefined
+  const [y, m, d] = s.split("-").map(Number)
+  return new Date(y, m - 1, d)
+}
+
+function DatePickerField({ value, onChange, label, minDate }: { value: string; onChange: (v: string) => void; label: string; minDate?: string }) {
+  const selected = parseDate(value)
+  const fromDate = minDate ? parseDate(minDate) : undefined
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label>{label}</Label>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !value && "text-muted-foreground")}>
+            <CalendarIcon className="mr-2 size-4" />
+            {selected ? format(selected, "d. M. yyyy", { locale: sk }) : "Vyberte dátum"}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={selected}
+            onSelect={(d) => { if (d) onChange(toDateStr(d)) }}
+            fromDate={fromDate}
+            locale={sk}
+            weekStartsOn={1}
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  )
 }
 
 export function ShiftDialog({ open, onOpenChange, employees, shift, defaultDate }: ShiftDialogProps) {
@@ -117,6 +163,36 @@ export function ShiftDialog({ open, onOpenChange, employees, shift, defaultDate 
     setSelectedDays((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
     )
+  }
+
+  function setThisWeek() {
+    const now = new Date()
+    const dow = now.getDay()
+    const monday = new Date(now)
+    monday.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1))
+    const sunday = new Date(monday)
+    sunday.setDate(monday.getDate() + 6)
+    setValidFrom(toDateStr(monday))
+    setValidUntil(toDateStr(sunday))
+  }
+
+  function setThisMonth() {
+    const now = new Date()
+    const y = now.getFullYear()
+    const m = now.getMonth()
+    setValidFrom(`${y}-${String(m + 1).padStart(2, "0")}-01`)
+    const lastDay = new Date(y, m + 1, 0).getDate()
+    setValidUntil(`${y}-${String(m + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`)
+  }
+
+  function setNextMonth() {
+    const now = new Date()
+    const next = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    const y = next.getFullYear()
+    const m = next.getMonth()
+    setValidFrom(`${y}-${String(m + 1).padStart(2, "0")}-01`)
+    const lastDay = new Date(y, m + 1, 0).getDate()
+    setValidUntil(`${y}-${String(m + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`)
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -222,16 +298,7 @@ export function ShiftDialog({ open, onOpenChange, employees, shift, defaultDate 
 
           {/* Date — once */}
           {frequency === "once" && (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="date">Dátum</Label>
-              <Input
-                id="date"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-              />
-            </div>
+            <DatePickerField value={date} onChange={setDate} label="Dátum" />
           )}
 
           {/* Days — weekly */}
@@ -263,45 +330,21 @@ export function ShiftDialog({ open, onOpenChange, employees, shift, defaultDate 
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <Label>Obdobie</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() => {
-                    const now = new Date()
-                    const y = now.getFullYear()
-                    const m = now.getMonth()
-                    setValidFrom(`${y}-${String(m + 1).padStart(2, "0")}-01`)
-                    const lastDay = new Date(y, m + 1, 0).getDate()
-                    setValidUntil(`${y}-${String(m + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`)
-                  }}
-                >
-                  Celý tento mesiac
-                </Button>
+                <div className="flex gap-1">
+                  <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={setThisWeek}>
+                    Tento týždeň
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={setThisMonth}>
+                    Tento mesiac
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={setNextMonth}>
+                    Budúci mesiac
+                  </Button>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="validFrom">Od</Label>
-                  <Input
-                    id="validFrom"
-                    type="date"
-                    value={validFrom}
-                    onChange={(e) => setValidFrom(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="validUntil">Do</Label>
-                  <Input
-                    id="validUntil"
-                    type="date"
-                    value={validUntil}
-                    onChange={(e) => setValidUntil(e.target.value)}
-                    min={validFrom}
-                    required
-                  />
-                </div>
+                <DatePickerField value={validFrom} onChange={setValidFrom} label="Od" />
+                <DatePickerField value={validUntil} onChange={setValidUntil} label="Do" minDate={validFrom} />
               </div>
             </div>
           )}
@@ -343,18 +386,6 @@ export function ShiftDialog({ open, onOpenChange, employees, shift, defaultDate 
               </div>
             </div>
           )}
-
-          {/* Note */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="note">Poznámka (nepovinná)</Label>
-            <Textarea
-              id="note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows={2}
-              placeholder="Napr. záskok, špeciálna udalosť…"
-            />
-          </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
