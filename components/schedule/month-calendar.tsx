@@ -75,6 +75,28 @@ interface LeaveContext {
 }
 
 const DAY_LABELS = ["Po", "Ut", "St", "Št", "Pi", "So", "Ne"]
+const HOUR_HEIGHT = 56
+
+function timeToMinutes(time: string): number {
+  const [h, m] = time.split(":").map(Number)
+  return h * 60 + m
+}
+
+function assignLanes<T extends { startTime: string; endTime: string }>(items: T[]): { item: T; lane: number; totalLanes: number }[] {
+  if (!items.length) return []
+  const indexed = items.map((item, i) => ({ item, i, start: timeToMinutes(item.startTime), end: timeToMinutes(item.endTime) }))
+  indexed.sort((a, b) => a.start - b.start || a.end - b.end)
+  const result: { lane: number }[] = new Array(items.length)
+  const laneEnds: number[] = []
+  for (const entry of indexed) {
+    let lane = laneEnds.findIndex(end => end <= entry.start)
+    if (lane === -1) { lane = laneEnds.length; laneEnds.push(entry.end) }
+    else { laneEnds[lane] = entry.end }
+    result[entry.i] = { lane }
+  }
+  const totalLanes = laneEnds.length
+  return items.map((item, i) => ({ item, lane: result[i].lane, totalLanes }))
+}
 
 export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmployees, businessHours, currentUserId }: MonthCalendarProps) {
   const router = useRouter()
@@ -323,85 +345,170 @@ export function MonthCalendar({ weeks, monthLabel, prevMonth, nextMonth, allEmpl
         </div>
       )}
 
-      {/* ── Week view ──────────────────────────────────── */}
-      {view === "week" && (
-        <div className="rounded-xl border overflow-hidden">
-          <div className="grid grid-cols-7 bg-muted/50 border-b">
-            {currentWeek.map((day) => {
-              const dateObj = new Date(day.date + "T12:00:00")
-              return (
-                <div key={day.date} className={cn("py-2 text-center border-r last:border-r-0", day.isToday && "bg-primary/10")}>
-                  <div className="text-xs font-medium text-muted-foreground">{DAY_LABELS[dateObj.getDay() === 0 ? 6 : dateObj.getDay() - 1]}</div>
-                  <div className={cn("mx-auto mt-0.5 size-7 rounded-full flex items-center justify-center text-sm font-semibold", day.isToday ? "bg-primary text-primary-foreground" : "text-foreground")}>
-                    {dateObj.getDate()}
+      {/* ── Week view (timeline) ─────────────────────── */}
+      {view === "week" && (() => {
+        const allEntries = currentWeek.flatMap(d => [
+          ...d.shifts.map(s => ({ start: s.startTime, end: s.endTime })),
+          ...d.openShifts.map(s => ({ start: s.startTime, end: s.endTime })),
+          ...d.requestedShifts.map(s => ({ start: s.startTime, end: s.endTime })),
+        ])
+        currentWeek.forEach(day => {
+          const dow = String(new Date(day.date + "T12:00:00").getDay())
+          const bh = businessHours?.get(dow)
+          if (bh && !bh.isClosed && bh.openTime && bh.closeTime)
+            allEntries.push({ start: bh.openTime, end: bh.closeTime })
+        })
+        let startHour: number, endHour: number
+        if (allEntries.length > 0) {
+          startHour = Math.min(...allEntries.map(e => Math.floor(timeToMinutes(e.start) / 60)))
+          endHour = Math.max(...allEntries.map(e => Math.ceil(timeToMinutes(e.end) / 60)))
+        } else {
+          startHour = 8; endHour = 22
+        }
+        const totalMinutes = (endHour - startHour) * 60
+        const totalHeight = (endHour - startHour) * HOUR_HEIGHT
+        const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i)
+        const yPos = (time: string) => ((timeToMinutes(time) - startHour * 60) / totalMinutes) * totalHeight
+        const hPos = (start: string, end: string) => yPos(end) - yPos(start)
+
+        return (
+          <div className="rounded-xl border overflow-hidden">
+            {/* Header */}
+            <div className="grid grid-cols-[48px_repeat(7,1fr)] bg-muted/50 border-b">
+              <div />
+              {currentWeek.map((day) => {
+                const dateObj = new Date(day.date + "T12:00:00")
+                return (
+                  <div key={day.date} className={cn("py-2 text-center border-l", day.isToday && "bg-primary/10")}>
+                    <div className="text-xs font-medium text-muted-foreground">{DAY_LABELS[dateObj.getDay() === 0 ? 6 : dateObj.getDay() - 1]}</div>
+                    <div className={cn("mx-auto mt-0.5 size-7 rounded-full flex items-center justify-center text-sm font-semibold", day.isToday ? "bg-primary text-primary-foreground" : "text-foreground")}>
+                      {dateObj.getDate()}
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
+
+            {/* Timeline body */}
+            <div className="grid grid-cols-[48px_repeat(7,1fr)]" style={{ height: totalHeight }}>
+              {/* Hour labels */}
+              <div className="relative border-r" style={{ height: totalHeight }}>
+                {hours.map((h) => (
+                  <div key={h} className="absolute right-2 -translate-y-1/2 text-[10px] text-muted-foreground/60 tabular-nums select-none" style={{ top: (h - startHour) * HOUR_HEIGHT }}>
+                    {String(h).padStart(2, "0")}:00
+                  </div>
+                ))}
+              </div>
+
+              {/* Day columns */}
+              {currentWeek.map((day) => {
+                const isPast = day.date < todayStr
+                const canRequest = !isPast && day.isCurrentMonth
+
+                type TaggedShift = CalendarShift & { _type: "shift" }
+                type TaggedOpen = OpenShift & { _type: "open" }
+                type TaggedReq = RequestedShift & { _type: "requested" }
+                type TaggedItem = TaggedShift | TaggedOpen | TaggedReq
+
+                const allItems: TaggedItem[] = [
+                  ...day.shifts.map(s => ({ ...s, _type: "shift" as const })),
+                  ...day.openShifts.map(s => ({ ...s, _type: "open" as const })),
+                  ...day.requestedShifts.map(s => ({ ...s, _type: "requested" as const })),
+                ]
+                const lanes = assignLanes(allItems)
+
+                return (
+                  <div
+                    key={day.date}
+                    className={cn("relative border-l", day.isToday && "bg-primary/5", !day.isCurrentMonth && "bg-muted/20", canRequest && "cursor-pointer")}
+                    style={{ height: totalHeight }}
+                    onClick={canRequest ? () => setRequestDate(day.date) : undefined}
+                  >
+                    {/* Hour grid lines */}
+                    {hours.map((h) => (
+                      <div key={h} className="absolute left-0 right-0 border-t border-muted/40" style={{ top: (h - startHour) * HOUR_HEIGHT }} />
+                    ))}
+
+                    {/* Shift blocks */}
+                    <div className="absolute inset-0" onClick={(e) => e.stopPropagation()}>
+                      {lanes.map(({ item, lane, totalLanes }) => {
+                        const top = yPos(item.startTime)
+                        const height = Math.max(hPos(item.startTime, item.endTime), 24)
+                        const widthPct = 100 / totalLanes
+                        const leftPct = (lane / totalLanes) * 100
+                        const posStyle = { top, height, width: `calc(${widthPct}% - 4px)`, left: `calc(${leftPct}% + 2px)` }
+
+                        if (item._type === "shift") {
+                          const shift = item
+                          const clickable = shift.isCurrentUser && !isPast
+                          return (
+                            <div
+                              key={shift.id}
+                              className={cn(
+                                "absolute flex flex-col justify-start rounded-md px-1.5 py-1 text-xs overflow-hidden",
+                                clickable && "cursor-pointer hover:opacity-80 transition-opacity",
+                              )}
+                              style={{
+                                ...posStyle,
+                                backgroundColor: shift.color + "30",
+                                borderLeft: `3px solid ${shift.color}`,
+                                color: shift.color,
+                              }}
+                              onClick={clickable ? () => openLeave(day, shift) : undefined}
+                            >
+                              <div className="font-semibold truncate leading-tight">{shift.userName}</div>
+                              <div className="opacity-80 leading-tight text-[10px]">{shift.startTime}–{shift.endTime}</div>
+                              {shift.note && height > 48 && (
+                                <div className="opacity-60 truncate mt-0.5 text-[10px]">{shift.note}</div>
+                              )}
+                            </div>
+                          )
+                        }
+
+                        if (item._type === "open") {
+                          const os = item
+                          return (
+                            <div
+                              key={os.id}
+                              className={cn(
+                                "absolute flex flex-col justify-start rounded-md border border-dashed border-muted-foreground/30 px-1.5 py-1 text-xs bg-muted/10 overflow-hidden",
+                                os.iMayClaim && !isPast && "cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors",
+                              )}
+                              style={posStyle}
+                              onClick={os.iMayClaim && !isPast ? () => handleClaim(os.id) : undefined}
+                            >
+                              <div className="font-medium text-muted-foreground leading-tight">Voľná</div>
+                              <div className="text-muted-foreground/70 text-[10px] leading-tight">{os.startTime}–{os.endTime}</div>
+                              {os.iMayClaim && !isPast && <div className="text-primary font-medium text-[10px] mt-0.5">Prihlásiť sa</div>}
+                              {os.myClaimId && <div className="text-muted-foreground flex items-center gap-0.5 text-[10px] mt-0.5"><Clock className="size-2.5" /> Čaká</div>}
+                            </div>
+                          )
+                        }
+
+                        if (item._type === "requested") {
+                          const rs = item
+                          return (
+                            <div
+                              key={rs.id}
+                              className="absolute flex flex-col justify-start rounded-md border border-dashed border-amber-400/60 px-1.5 py-1 text-xs bg-amber-50/50 dark:bg-amber-950/20 overflow-hidden"
+                              style={posStyle}
+                            >
+                              <div className="font-medium text-amber-700 dark:text-amber-400 leading-tight">Požiadavka</div>
+                              <div className="text-muted-foreground text-[10px] leading-tight">{rs.startTime}–{rs.endTime}</div>
+                            </div>
+                          )
+                        }
+
+                        return null
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
-          <div className="grid grid-cols-7 min-h-64">
-            {currentWeek.map((day) => {
-              const isPast = day.date < todayStr
-              const dow = String(new Date(day.date + "T12:00:00").getDay())
-              const bh = businessHours?.get(dow)
-              const hasOpenHours = bh && !bh.isClosed && bh.openTime && bh.closeTime
-              const canRequest = !isPast && day.isCurrentMonth
-              const empty = day.shifts.length === 0 && day.openShifts.length === 0 && day.requestedShifts.length === 0
-              return (
-                <div key={day.date} className={cn("border-r last:border-r-0 p-1.5 flex flex-col gap-1", day.isToday && "bg-primary/5", !day.isCurrentMonth && "bg-muted/20")}>
-                  {hasOpenHours && (
-                    <div className={cn("text-[10px] text-muted-foreground/50 select-none", canRequest && "cursor-pointer")}
-                      onClick={canRequest ? () => setRequestDate(day.date) : undefined}>
-                      {bh.openTime!.slice(0, 5)}–{bh.closeTime!.slice(0, 5)}
-                    </div>
-                  )}
-                  {empty && canRequest && (
-                    <button onClick={() => setRequestDate(day.date)}
-                      className="flex items-center justify-center gap-1 text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors rounded p-1 hover:bg-muted w-full">
-                      <Plus className="size-3" />
-                    </button>
-                  )}
-                  {day.shifts.map((shift) => {
-                    const clickable = shift.isCurrentUser && !isPast
-                    return (
-                      <div key={shift.id}
-                        className={cn("rounded-lg px-2 py-1.5 text-xs", clickable && "cursor-pointer hover:opacity-80 transition-opacity")}
-                        style={{ backgroundColor: shift.color + "28", borderLeft: `3px solid ${shift.color}`, color: shift.color }}
-                        onClick={clickable ? () => openLeave(day, shift) : undefined}>
-                        <div className="font-semibold truncate">{shift.userName}</div>
-                        <div className="opacity-80">{shift.startTime}–{shift.endTime}</div>
-                        {shift.note && <div className="opacity-60 truncate mt-0.5">{shift.note}</div>}
-                      </div>
-                    )
-                  })}
-                  {day.requestedShifts.map((rs) => (
-                    <div key={rs.id} className="rounded-lg border border-dashed border-amber-400/60 px-2 py-1.5 text-xs bg-amber-50/50 dark:bg-amber-950/20">
-                      <div className="font-medium text-amber-700 dark:text-amber-400">Moja požiadavka</div>
-                      <div className="text-muted-foreground">{rs.startTime}–{rs.endTime}</div>
-                    </div>
-                  ))}
-                  {day.openShifts.map((os) => (
-                    <div key={os.id}
-                      className={cn("rounded-lg border border-dashed border-muted-foreground/40 px-2 py-1.5 text-xs bg-muted/10", os.iMayClaim && !isPast && "cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors")}
-                      onClick={os.iMayClaim && !isPast ? () => handleClaim(os.id) : undefined}>
-                      <div className="font-medium text-muted-foreground">Voľná zmena</div>
-                      <div className="text-muted-foreground/70">{os.startTime}–{os.endTime}</div>
-                      {os.iMayClaim && !isPast && <div className="text-primary font-medium mt-0.5">Prihlásiť sa</div>}
-                      {os.myClaimId && <div className="text-muted-foreground flex items-center gap-1 mt-0.5"><Clock className="size-3" /> Čaká</div>}
-                    </div>
-                  ))}
-                  {!empty && canRequest && (
-                    <button onClick={() => setRequestDate(day.date)}
-                      className="mt-auto flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground transition-colors rounded p-0.5 hover:bg-muted">
-                      <Plus className="size-3" />
-                    </button>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
+        )
+      })()}
 
       <LeaveRequestDialog
         open={!!leaveCtx}

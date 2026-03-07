@@ -624,10 +624,12 @@ export function AdminMonthCalendar({
             if (bh && !bh.isClosed && bh.openTime && bh.closeTime)
               allEntries.push({ start: bh.openTime, end: bh.closeTime })
           })
-          let startHour = 8, endHour = 22
+          let startHour: number, endHour: number
           if (allEntries.length > 0) {
-            startHour = Math.min(startHour, ...allEntries.map(e => Math.floor(timeToMinutes(e.start) / 60)))
-            endHour = Math.max(endHour, ...allEntries.map(e => Math.ceil(timeToMinutes(e.end) / 60)))
+            startHour = Math.min(...allEntries.map(e => Math.floor(timeToMinutes(e.start) / 60)))
+            endHour = Math.max(...allEntries.map(e => Math.ceil(timeToMinutes(e.end) / 60)))
+          } else {
+            startHour = 8; endHour = 22
           }
           const totalMinutes = (endHour - startHour) * 60
           const totalHeight = (endHour - startHour) * HOUR_HEIGHT
@@ -705,7 +707,7 @@ export function AdminMonthCalendar({
                                 <DropdownMenuTrigger asChild>
                                   <button
                                     className={cn(
-                                      "absolute rounded-md px-1.5 py-0.5 text-xs text-left hover:opacity-80 transition-opacity overflow-hidden",
+                                      "absolute flex flex-col justify-start rounded-md px-1.5 py-1 text-xs text-left hover:opacity-80 transition-opacity overflow-hidden",
                                       shift.status === "draft" && "opacity-60",
                                     )}
                                     style={{
